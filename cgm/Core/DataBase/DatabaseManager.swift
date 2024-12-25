@@ -51,7 +51,205 @@ class DatabaseManager {
         let sectors: [Sector] = try await client.from("Sectors").select("*").eq("gymID", value: currentGymId).execute().value
         return sectors
     }
+    
+    func createGradeVote(gradeVote: GradeVote) async throws {
+        let response = try await client.from("GradeVotes").insert(gradeVote).execute()
+        print(response.data)
+    }
+    
+    func getGradeVote(boulderID: Int, userID: String) async throws -> GradeVote? {
+        let vote: GradeVote? = try await client
+            .from("GradeVotes")
+            .select("*")
+            .eq("boulder_id", value: boulderID)
+            .eq("user_id", value: userID)
+            .single()
+            .execute()
+            .value
+        return vote
+    }
+    
+
+
+        
+    func getStarVote(boulderID: Int, userID: String) async throws -> StarVote? {
+        let vote: StarVote? = try await client
+            .from("StarVotes")
+            .select("*")
+            .eq("boulder_id", value: boulderID)
+            .eq("user_id", value: userID)
+            .single()
+            .execute()
+            .value
+        return vote
+    }
+
+    
+    func getBoulderStarVotes(boulderID: Int) async throws -> [StarVote] {
+
+        let votes: [StarVote] = try await client
+            .from("StarVotes")
+            .select("*")
+            .eq("boulder_id", value: boulderID) 
+            .execute()
+            .value
+        
+        return votes
+    }
+    
+    func getBoulderToppedBy(boulderID: Int) async throws -> [ToppedBy] {
+        let data: [ToppedBy] = try await client
+            .from("ToppedBy")
+            .select("*")
+            .eq("boulder_id", value: boulderID)
+            .execute()
+            .value
+        return data
+    }
+    
+    
+    func updateStarVote(starVote: StarVote) async throws {
+        let response = try await client
+            .from("StarVotes")
+            .upsert(starVote)
+            .execute()
+        print("Updated response: \(response.data)")
+    }
+    
+    func updateGradeVote(gradeVote: GradeVote) async throws {
+        let response = try await client
+            .from("GradeVotes")
+            .upsert(gradeVote)
+            .execute()
+        print("Updated response: \(response.data)")
+    }
+    
+    
+    func updateToppedBy(toppedBy: ToppedBy) async throws {
+        let response = try await client
+            .from("ToppedBy")
+            .upsert(toppedBy)
+            .execute()
+        print("Updated response: \(response.data)")
+    }
+    
+    func getToppedBy(boulderID: Int, userID: String) async throws -> ToppedBy? {
+        let data: [ToppedBy] = try await client
+            .from("ToppedBy")
+            .select("*")
+            .eq("boulder_id", value: boulderID)
+            .eq("user_id", value: userID)
+            .limit(1) // Pobierz maksymalnie jeden rekord
+            .execute()
+            .value
+        return data.first // Zwróć pierwszy element lub nil, jeśli brak wyników
+    }
+    
+    func getUser(userID: String) async throws -> User? {
+        let data: User? = try await client
+            .from("Users")
+            .select("*")
+            .eq("uid", value: userID)
+            .single()
+            .execute()
+            .value
+        return data
+    }
+    
+    func deleteToppedBy(boulderID: Int, userID: String) async throws {
+        let response = try await client
+            .from("ToppedBy")
+            .delete()
+            .eq("boulder_id", value: boulderID)
+            .eq("user_id", value: userID)
+            .execute()
+        print("Deleted response: \(response.data)")
+    }
+    
+
+
+    //potem to dac do innej funkcji ale narazie cos nie chce mi dzialac inaczej
+    struct AllGradeGroupedVotes: Identifiable {
+        let id = UUID()
+        let difficulty: String
+        let votes: Int
+    }
+    func fetchGroupedGradeVotes(boulderID: Int, boulderDifficulty: String) async throws -> [AllGradeGroupedVotes] {
+        // Fetch the votes from the database
+        let votes: [GradeVote] = try await client
+            .from("GradeVotes")
+            .select("*")
+            .eq("boulder_id", value: boulderID)
+            .execute()
+            .value ?? []
+
+        let groupedVotes = Dictionary(grouping: votes, by: { $0.grade_vote })
+        let allGroupedVotes: [AllGradeGroupedVotes] = groupedVotes.map { difficulty, voteList in
+            AllGradeGroupedVotes(difficulty: difficulty, votes: voteList.count)
+        }
+        
+        let allDifficulties = ["4A", "4A+", "4B", "4B+", "4C", "4C+", "5A", "5A+", "5B", "5B+", "5C", "5C+", "6A", "6A+", "7A", "7A+", "7B", "7B+", "7C", "7C+", "8A", "8A+", "8B", "8B+", "8C", "8C+", "9A", "9A+", "9B", "9B+", "9C", "9C+"]
+        
+        let currentIndex = allDifficulties.firstIndex(of: boulderDifficulty) ?? 0
+        
+        let lowerBound = max(0, currentIndex - 4)
+        let upperBound = min(allDifficulties.count - 1, currentIndex + 4)
+        let relevantDifficulties = Array(allDifficulties[lowerBound...upperBound])
+        
+        var difficultyVotes: [String: Int] = [:]
+        
+        for vote in allGroupedVotes {
+            difficultyVotes[vote.difficulty] = vote.votes
+        }
+        
+        var result: [AllGradeGroupedVotes] = []
+        
+        for difficulty in relevantDifficulties {
+            let voteCount = difficultyVotes[difficulty] ?? 0
+            result.append(AllGradeGroupedVotes(difficulty: difficulty, votes: voteCount))
+        }
+        
+        return result
+    }
+
+        
+    func fetchStarVotesForBoulder(boulderID: Int) async throws -> [StarVote] {
+            let votes: [StarVote] = try await client
+                .from("StarVotes")
+                .select("*")
+                .eq("boulder_id", value: boulderID)
+                .execute()
+                .value
+            return votes
+        }
+    
+    func getBoulderByID(boulderID: Int) async throws -> BoulderD? {
+        let boulder: BoulderD? = try await client
+            .from("Boulders")
+            .select("*")
+            .eq("id", value: boulderID)
+            .single()
+            .execute()
+            .value
+        return boulder
+    }
+    
+    func getSectorByID(sectorID: Int) async throws -> Sector? {
+        let sector: Sector? = try await client
+            .from("Sectors")
+            .select("*")
+            .eq("id", value: sectorID)
+            .single()
+            .execute()
+            .value
+        
+        return sector
+    }
+
+    
 }
+
+
 
 
 ///STRUCTS
@@ -87,4 +285,27 @@ struct Sector: Identifiable, Decodable, Encodable{
     var id:             Int
     var sector_name:    String
     var gymID:          Int
+}
+
+
+struct GradeVote: Encodable, Decodable {
+    var user_id: String
+    var boulder_id: Int
+    var created_at: String?
+    var grade_vote: String
+}
+
+
+struct StarVote: Encodable, Decodable {
+    var user_id: String
+    var boulder_id: Int
+    var created_at: String?
+    var star_vote: Int
+}
+
+struct ToppedBy: Encodable, Decodable {
+    var user_id: String
+    var boulder_id: Int
+    var is_flashed: Bool
+    var created_at: String?
 }
