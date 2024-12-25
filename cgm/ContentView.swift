@@ -10,7 +10,7 @@ struct MainView: View {
         ZStack {
             if selectedGym == nil {
                 VStack {
-                    SelectGymView()
+                   // SelectGymView()
                     
                     Button("Save") {
                         let gymName = "Example Gym"

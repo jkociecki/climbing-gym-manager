@@ -46,9 +46,9 @@ class DatabaseManager {
         return map.mapSectorsSVG
     }
     
-    func getCurrentGymSectors() async throws -> [Sector] {
+    func getCurrentGymSectors() async throws -> [SectorD] {
         let currentGymId = UserDefaults.standard.string(forKey: "selectedGym")
-        let sectors: [Sector] = try await client.from("Sectors").select("*").eq("gymID", value: currentGymId).execute().value
+        let sectors: [SectorD] = try await client.from("Sectors").select("*").eq("gymID", value: currentGymId).execute().value
         return sectors
     }
     
@@ -234,8 +234,8 @@ class DatabaseManager {
         return boulder
     }
     
-    func getSectorByID(sectorID: Int) async throws -> Sector? {
-        let sector: Sector? = try await client
+    func getSectorByID(sectorID: Int) async throws -> SectorD? {
+        let sector: SectorD? = try await client
             .from("Sectors")
             .select("*")
             .eq("id", value: sectorID)
@@ -281,7 +281,7 @@ struct BoulderD: Identifiable, Decodable, Encodable{
     var gym_id:         Int
 }
 
-struct Sector: Identifiable, Decodable, Encodable{
+struct SectorD: Identifiable, Decodable, Encodable{
     var id:             Int
     var sector_name:    String
     var gymID:          Int
