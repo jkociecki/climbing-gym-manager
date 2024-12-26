@@ -16,6 +16,8 @@
 import SwiftUI
 import UIKit
 
+let allDifficulties = ["4A", "4A+", "4B", "4B+", "4C", "4C+", "5A", "5A+", "5B", "5B+", "5C", "5C+", "6A", "6A+", "7A", "7A+", "7B", "7B+", "7C", "7C+", "8A", "8A+", "8B", "8B+", "8C", "8C+", "9A", "9A+", "9B", "9B+", "9C", "9C+"]
+
 struct BoulderInfo: View {
     var boulderID: Int
     var userID: String = "08BBCE85-0A59-4500-821D-0A235C7C5AEA"
@@ -57,15 +59,13 @@ struct BoulderInfo: View {
             if let boulder = try await DatabaseManager.shared.getBoulderByID(boulderID: boulderID) {
                 difficulty = boulder.diff
                 color = boulder.color
-                
-                // Pobierz nazwę sektora
+
                 if let sectorData = try await DatabaseManager.shared.getSectorByID(sectorID: boulder.sector_id) {
                     sector = sectorData.sector_name
                 } else {
                     sector = "Unknown Sector"
                 }
                 
-                // Dla prostoty routesetter ustawiony jako "Unknown" (można rozszerzyć logikę)
                 routesetter = "Unknown"
             } else {
                 difficulty = "Unknown"
@@ -109,7 +109,7 @@ struct BoulderTopBar: View {
             VStack(alignment: .trailing, spacing: 0) {
                 HStack(spacing: 8) {
                     Circle()
-                        .fill(Color(UIColor(hex: color) ?? .yellow)) // Bezpośrednie użycie koloru
+                        .fill(Color(hex: color))
                         .frame(width: 25, height: 25)
                     Text("\(sector)")
                         .font(.system(size: 24, weight: .bold))
@@ -130,38 +130,6 @@ struct BoulderTopBar: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-    }
-}
-
-
-// Rozszerzenie UIColor dla obsługi Hex
-extension UIColor {
-    convenience init?(hex: String) {
-        var hexSanitized = hex.trimmingCharacters(in: .whitespacesAndNewlines)
-        if hexSanitized.hasPrefix("#") {
-            hexSanitized.remove(at: hexSanitized.startIndex)
-        }
-
-        var rgb: UInt64 = 0
-        guard Scanner(string: hexSanitized).scanHexInt64(&rgb) else { return nil }
-
-        let r, g, b, a: CGFloat
-        switch hexSanitized.count {
-        case 6: // RGB (bez alfa)
-            r = CGFloat((rgb >> 16) & 0xFF) / 255.0
-            g = CGFloat((rgb >> 8) & 0xFF) / 255.0
-            b = CGFloat(rgb & 0xFF) / 255.0
-            a = 1.0
-        case 8: // RGBA
-            r = CGFloat((rgb >> 24) & 0xFF) / 255.0
-            g = CGFloat((rgb >> 16) & 0xFF) / 255.0
-            b = CGFloat((rgb >> 8) & 0xFF) / 255.0
-            a = CGFloat(rgb & 0xFF) / 255.0
-        default:
-            return nil
-        }
-
-        self.init(red: r, green: g, blue: b, alpha: a)
     }
 }
 
@@ -396,8 +364,6 @@ struct VotesAndSliderView: View {
     
     @State private var sliderValue: Double = 0
     @State private var isChanged: Bool = false
-
-    let allDifficulties = ["4A", "4A+", "4B", "4B+", "4C", "4C+", "5A", "5A+", "5B", "5B+", "5C", "5C+", "6A", "6A+", "7A", "7A+", "7B", "7B+", "7C", "7C+", "8A", "8A+", "8B", "8B+", "8C", "8C+", "9A", "9A+", "9B", "9B+", "9C", "9C+"]
     
     var body: some View {
         VStack(spacing: 0) {

@@ -2,7 +2,7 @@ import Foundation
 
 // Struktura poziomów trudności i punktów
 let levels = [
-    ("Beginner", 0), // Początkowy poziom
+    ("Beginner", 0),
     ("4A", 100),
     ("4B", 150),
     ("4C", 200),
@@ -47,48 +47,48 @@ struct RankingUser: Identifiable {
 
 import Foundation
 
+func calculatePointsForBoulder(difficulty: String, isFlashed: Bool) -> Int {
+    // Get points for the given difficulty level
+    let difficultyPoints = levels.first(where: { $0.0 == difficulty })?.1 ?? 0
+    let flashBonus = isFlashed ? Int(Double(difficultyPoints) * 0.2) : 0
+    return Int(Double(difficultyPoints + flashBonus) * 0.1)
+}
+
 class RankingManager {
     let db = DatabaseManager.shared
     
     func calculatePoints(toppedBoulders: [ToppedBy], boulders: [BoulderD]) -> Int {
         var points = 0
         
-        // Obliczanie daty sprzed 2 miesięcy
         let calendar = Calendar.current
         let dateCutoff = calendar.date(byAdding: .month, value: -2, to: Date()) ?? Date()
         
-        // Filtrowanie ukończonych boulderów, które są z ostatnich 2 miesięcy
+        // Filter topped boulders from the last 2 months
         let recentToppedBoulders = toppedBoulders.filter { topped in
             guard let createdAtString = topped.created_at,
                   let createdAt = ISO8601DateFormatter().date(from: createdAtString) else {
                 return false
             }
-
             return createdAt >= dateCutoff
         }
 
-        // Sortowanie boulderów według trudności (od najwyższego do najniższego)
+        // Sort boulders by difficulty
         let sortedBoulders = recentToppedBoulders.compactMap { topped -> (ToppedBy, BoulderD)? in
             if let boulder = boulders.first(where: { $0.id == topped.boulder_id }) {
                 return (topped, boulder)
             }
             return nil
         }
-            .sorted { b1, b2 in
-                let points1 = levels.first(where: { $0.0 == b1.1.diff })?.1 ?? 0
-                let points2 = levels.first(where: { $0.0 == b2.1.diff })?.1 ?? 0
-                return points1 > points2
-            }
+        .sorted { b1, b2 in
+            let points1 = levels.first(where: { $0.0 == b1.1.diff })?.1 ?? 0
+            let points2 = levels.first(where: { $0.0 == b2.1.diff })?.1 ?? 0
+            return points1 > points2
+        }
 
+        // Calculate total points
         for (topped, boulder) in sortedBoulders.prefix(10) {
-            let difficultyPoints = levels.first(where: { $0.0 == boulder.diff })?.1 ?? 0
-            let pointsToAdd = Int(Double(difficultyPoints) * 0.1) // 90% wartości punktów za trudność
+            let pointsToAdd = calculatePointsForBoulder(difficulty: boulder.diff, isFlashed: topped.is_flashed)
             points += pointsToAdd
-            
-            if topped.is_flashed {
-                let flashBonus = Int(Double(pointsToAdd) * 0.2) // +20% bonus za flash na zaktualizowanych punktach
-                points += flashBonus
-            }
         }
         
         return points

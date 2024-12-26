@@ -189,7 +189,7 @@ struct HomeView: View {
     }
 }
 
-struct ProfileView: View {
+struct ProfileView2: View {
     var body: some View {
         Text("Profile")
             .font(.largeTitle)

@@ -68,9 +68,6 @@ class DatabaseManager {
             .value
         return vote
     }
-    
-
-
         
     func getStarVote(boulderID: Int, userID: String) async throws -> StarVote? {
         let vote: StarVote? = try await client
@@ -90,7 +87,7 @@ class DatabaseManager {
         let votes: [StarVote] = try await client
             .from("StarVotes")
             .select("*")
-            .eq("boulder_id", value: boulderID) 
+            .eq("boulder_id", value: boulderID)
             .execute()
             .value
         
@@ -139,10 +136,10 @@ class DatabaseManager {
             .select("*")
             .eq("boulder_id", value: boulderID)
             .eq("user_id", value: userID)
-            .limit(1) // Pobierz maksymalnie jeden rekord
+            .limit(1)
             .execute()
             .value
-        return data.first // Zwróć pierwszy element lub nil, jeśli brak wyników
+        return data.first
     }
     
     func getUser(userID: String) async throws -> User? {
@@ -166,6 +163,18 @@ class DatabaseManager {
         print("Deleted response: \(response.data)")
     }
     
+    func getUserDetails(userID: String) async throws -> User? {
+        let data: [User] = try await client
+            .from("Users")
+            .select("*")
+            .eq("uid", value: userID)
+            .limit(1)
+            .execute()
+            .value
+        return data.first
+    }
+
+    
 
 
     //potem to dac do innej funkcji ale narazie cos nie chce mi dzialac inaczej
@@ -188,8 +197,6 @@ class DatabaseManager {
             AllGradeGroupedVotes(difficulty: difficulty, votes: voteList.count)
         }
         
-        let allDifficulties = ["4A", "4A+", "4B", "4B+", "4C", "4C+", "5A", "5A+", "5B", "5B+", "5C", "5C+", "6A", "6A+", "7A", "7A+", "7B", "7B+", "7C", "7C+", "8A", "8A+", "8B", "8B+", "8C", "8C+", "9A", "9A+", "9B", "9B+", "9C", "9C+"]
-        
         let currentIndex = allDifficulties.firstIndex(of: boulderDifficulty) ?? 0
         
         let lowerBound = max(0, currentIndex - 4)
@@ -210,6 +217,16 @@ class DatabaseManager {
         }
         
         return result
+    }
+    
+    func getToppedBoulders(forUserID userID: String) async throws -> [ToppedBy] {
+        let toppedBoulders = try await client
+            .from("ToppedBy")
+            .select("*")
+            .eq("user_id", value: userID)
+            .execute().value as [ToppedBy]
+        
+        return toppedBoulders
     }
 
         
@@ -245,6 +262,21 @@ class DatabaseManager {
         
         return sector
     }
+    
+    func getUserStats(userID: String) async throws -> (flashes: Int, tops: Int) {
+        let data: [ToppedBy] = try await client
+            .from("ToppedBy")
+            .select("*")
+            .eq("user_id", value: userID)
+            .execute()
+            .value
+        
+        let flashes = data.filter { $0.is_flashed }.count
+        let tops = data.count
+        
+        return (flashes, tops)
+    }
+
 
     
 }
