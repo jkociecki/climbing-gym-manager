@@ -1,12 +1,14 @@
 import SwiftUI
 
+
+// MARK: - Modified MapView
 struct MapView: View {
-    @StateObject private var mapViewModel:  MapViewModel = MapViewModel()
-
-    let defaultScale:                       CGFloat = 0.5
-    let zoomScale:                          CGFloat = 1.2
-    @State var transform:                   CGAffineTransform
-
+    @StateObject private var mapViewModel: MapViewModel = MapViewModel()
+    @State private var selectedBoulder: Int? = nil
+    
+    let defaultScale: CGFloat = 0.5
+    let zoomScale: CGFloat = 1.2
+    @State var transform: CGAffineTransform
     
     init() {
         _transform = State(initialValue: CGAffineTransform(scaleX: defaultScale, y: defaultScale))
@@ -19,45 +21,49 @@ struct MapView: View {
             ZStack {
                 ForEach(Array(mapViewModel.gymSectors.enumerated()), id: \.offset) { sectorIndex, sector in
                     SectorView(
-                        sector:         sector,
-                        isSelected:     mapViewModel.selectedSectorIndex == sectorIndex
+                        sector: sector,
+                        isSelected: mapViewModel.selectedSectorIndex == sectorIndex
                     )
                 }
                 .transformEffect(transform)
+                .ignoresSafeArea()
             }
             .overlay(
                 GestureTransformView(
-                    transform:  $transform,
-                    paths:      $mapViewModel.gymSectors
+                    transform: $transform,
+                    paths: $mapViewModel.gymSectors
                 )
+                .ignoresSafeArea()
             )
             
             bouldersOverlay
                 .transformEffect(transform)
+                .drawingGroup()
+                .ignoresSafeArea()
             
             ForEach(Array(mapViewModel.gymSectors.enumerated()), id: \.offset) { sectorIndex, sector in
                 let center = sector.paths[0].path.boundingRect
-
-            Text(sector.id)
-                .font(.custom("Righteous-Regular", size: 10))
-                .foregroundStyle(.white)
-                .position(x: center.midX, y: center.midY)
-                .background(
-                    RoundedRectangle(cornerRadius: 30)
-                        .stroke(.white, lineWidth: 3)
-                        .fill(.purple)
-                        .frame(width: 73, height: 26)
-                        .position(x: center.midX, y: center.midY)
-                ).transformEffect(transform)
-                    .onAppear{
-                        print("TEkST: ", sectorIndex, center.midX, " ", center.midY)
-                    }
-                    }
-
+                
+                Text(sector.id)
+                    .font(.custom("Righteous-Regular", size: 10))
+                    .foregroundStyle(.white)
+                    .position(x: center.midX, y: center.midY)
+                    .background(
+                        RoundedRectangle(cornerRadius: 30)
+                            .stroke(.white, lineWidth: 3)
+                            .fill(.purple)
+                            .frame(width: 73, height: 26)
+                            .position(x: center.midX, y: center.midY)
+                    )
+                    .transformEffect(transform)
+                    .drawingGroup()
+                    .ignoresSafeArea()
+            }
+        }
+        .sheet(item: $selectedBoulder) { boulderId in
+            BoulderInfo(boulderID: boulderId)
         }
     }
-    
-    
     
     private var bouldersOverlay: some View {
         ZStack {
@@ -70,35 +76,67 @@ struct MapView: View {
                     }
                     return CGPoint(x: 0, y: 0)
                 }()
-
+                
                 let scaleFactor = transform.a
                 let visibleRect = calculateVisibleRect()
                 let isVisible = visibleRect.contains(CGPoint(x: boulder.x, y: boulder.y))
                 let isZoomedIn = scaleFactor > 1.5
-
-                Text(boulder.difficulty)
-                    .font(.custom("Righteous-Regular", size: 5 * scaleFactor))
-                    .foregroundColor(.white)
-                    .padding(5)
-                    .background(
-                        Circle()
-                            .fill(boulder.color)
-                            .shadow(color: boulder.color.opacity(0.4), radius: 5, x: 0, y: 2)
-                    )
-                    .overlay(
-                        Circle()
-                            .stroke(Color.white, lineWidth: 1)
-                    )
-                    .position(isVisible ? CGPoint(x: boulder.x, y: boulder.y) : centerPosition)
-                    .opacity(isZoomedIn ? (isVisible ? 1 : 0) : 0)
-                    .modifier(TransitionModifier(isVisible: isVisible))
+                
+                ZStack {
+                    Text(boulder.difficulty)
+                        .font(.custom("Righteous-Regular", size: 5))
+                        .foregroundColor(.white)
+                        .padding(5)
+                        .background(
+                            Circle()
+                                .fill(boulder.color)
+                                .shadow(color: boulder.color.opacity(0.4), radius: 5, x: 0, y: 2)
+                        )
+                        .overlay(
+                            Circle()
+                                .stroke(Color.white, lineWidth: 1)
+                        )
+                        .overlay(getBoulderIcon(isFlased: boulder.isDone))
+                        .position(isVisible ? CGPoint(x: boulder.x, y: boulder.y) : centerPosition)
+                        .opacity(isZoomedIn ? (isVisible ? 1 : 0) : 0)
+                        .modifier(TransitionModifier(isVisible: isVisible))
+                        .onTapGesture {
+                            if isVisible && isZoomedIn {
+                                selectedBoulder = boulder.id
+                            }
+                        }
+                }
             }
         }
     }
-
+    @ViewBuilder
+    func getBoulderIcon(isFlased: FlashDoneNone) -> some View {
+        switch isFlased {
+        case .Flash:
+            ZStack{
+                Circle()
+                    .stroke(.yellow, lineWidth: 2)
+                    .opacity(0.9)
+                    .frame(width: 24, height: 24)
+            }
+        case .Done:
+            ZStack{
+                Circle()
+                    .stroke(.yellow, lineWidth: 2)
+                    .opacity(0.9)
+                    .frame(width: 24, height: 24)
+                Circle()
+                    .stroke(.yellow, lineWidth: 1.5)
+                    .opacity(0.5)
+                    .scaleEffect(1.2)
+                    .frame(width: 24, height: 24)
+            }
+        default:
+            EmptyView()
+        }
+    }
     private func calculateVisibleRect() -> CGRect {
         let inverseTransform = transform.inverted()
-        // Przy założeniu, że masz znane rozmiary ekranu.
         let screenSize = UIScreen.main.bounds.size
         let topLeft = CGPoint.zero.applying(inverseTransform)
         let topRight = CGPoint(x: screenSize.width, y: 0).applying(inverseTransform)
@@ -128,10 +166,12 @@ struct MapView: View {
                     value: isVisible
                 )
         }
-    }
-    
-}
+    }}
 
+// MARK: - Helper Extension
+extension Int: Identifiable {
+    public var id: Int { self }
+}
 struct SectorView: View {
     let sector:     Sector
     let isSelected: Bool

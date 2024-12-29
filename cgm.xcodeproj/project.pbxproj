@@ -14,6 +14,7 @@
 		592CCD872D0E49E1006826F6 /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = 592CCD862D0E49E1006826F6 /* Storage */; };
 		592CCD8A2D0E4A2D006826F6 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 592CCD892D0E4A2D006826F6 /* Supabase */; };
 		59679C562D10C27C00287845 /* Macaw in Frameworks */ = {isa = PBXBuildFile; productRef = 59679C552D10C27C00287845 /* Macaw */; };
+		59B91FF72D21B438005153DC /* Righteous-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 59B91FF62D21B438005153DC /* Righteous-Regular.ttf */; };
 		59DA96B92D13847B008668AF /* Inter_18pt-Black.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 59DA96B82D13847B008668AF /* Inter_18pt-Black.ttf */; };
 		59DA96F02D1384C4008668AF /* Inter_24pt-Black.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 59DA96CC2D1384C4008668AF /* Inter_24pt-Black.ttf */; };
 		59DA96F12D1384C4008668AF /* Inter_18pt-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 59DA96C52D1384C4008668AF /* Inter_18pt-Medium.ttf */; };
@@ -90,6 +91,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		59B91FF62D21B438005153DC /* Righteous-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Righteous-Regular.ttf"; sourceTree = "<group>"; };
 		59DA96B82D13847B008668AF /* Inter_18pt-Black.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Inter_18pt-Black.ttf"; sourceTree = "<group>"; };
 		59DA96BA2D1384C4008668AF /* Inter_18pt-Black 2.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Inter_18pt-Black 2.ttf"; sourceTree = "<group>"; };
 		59DA96BB2D1384C4008668AF /* Inter_18pt-BlackItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Inter_18pt-BlackItalic.ttf"; sourceTree = "<group>"; };
@@ -302,6 +304,7 @@
 				59DA96EE2D1384C4008668AF /* Inter_28pt-Thin.ttf */,
 				59DA96EF2D1384C4008668AF /* Inter_28pt-ThinItalic.ttf */,
 				59DA96B82D13847B008668AF /* Inter_18pt-Black.ttf */,
+				59B91FF62D21B438005153DC /* Righteous-Regular.ttf */,
 			);
 			path = Font;
 			sourceTree = "<group>";
@@ -471,6 +474,7 @@
 				59DA970E2D1384C4008668AF /* Inter_28pt-MediumItalic.ttf in Resources */,
 				59DA970F2D1384C4008668AF /* Inter_28pt-Regular.ttf in Resources */,
 				59DA97102D1384C4008668AF /* Inter_18pt-ThinItalic.ttf in Resources */,
+				59B91FF72D21B438005153DC /* Righteous-Regular.ttf in Resources */,
 				59DA97112D1384C4008668AF /* Inter_24pt-ExtraBoldItalic.ttf in Resources */,
 				59DA97122D1384C4008668AF /* Inter_28pt-Light.ttf in Resources */,
 				59DA97132D1384C4008668AF /* Inter_24pt-Thin.ttf in Resources */,

@@ -2,7 +2,7 @@ import SwiftUI
 
 
 struct MainView: View {
-    @State private var selectedTab: String = "house"
+    @State private var selectedTab: String = "housee"
     @State private var showSideMenu: Bool = false
     @State private var selectedView: String = "Home"
     
@@ -59,8 +59,7 @@ struct MainView: View {
                 leftButton: .menuButton(showSideMenu: $showSideMenu),
                 rightButton: .notification {
                     print("Home notification tapped")
-                },
-                additionalContent: AnyView(HomeTopBarContent())
+                }
             )
             
         case "Profile":
@@ -108,35 +107,27 @@ struct TabView: View {
     
     var body: some View {
         ZStack {
-            // Najpierw sprawdzamy selectedTab (nawigacja z TabBara)
             if isTabBarSelection {
                 switch selectedTab {
                 case "house":
-                    HomeView()
-                        .padding(.bottom, 90)
+                    MapView()
                 case "chart.bar":
-                    HomeView()
-                        .padding(.bottom, 90)
+                    RankingView()
                 case "person":
                     ProfileView()
-                        .padding(.bottom, 90)
                 case "plus":
-                    AddNewView()
-                        .padding(.bottom, 90)
+                    GymChatView()
                 default:
-                    HomeView()
-                        .padding(.bottom, 90)
+                    ProfileView()
                 }
             }
-            // Jeśli nie jest to selekcja z TabBara, sprawdzamy selectedView (menu boczne)
             else {
                 switch selectedView {
                 case "Home":
                     HomeView()
                         .padding(.bottom, 90)
                 case "Profile":
-                    ProfileView()
-                        .padding(.bottom, 90)
+                    SetUpAccountView()
                 case "Statistics":
                     HomeView()
                         .padding(.bottom, 90)
@@ -147,8 +138,7 @@ struct TabView: View {
                     HomeView()
                         .padding(.bottom, 90)
                 case "Favourites":
-                    HomeView()
-                        .padding(.bottom, 90)
+                    SelectGymView()
                 default:
                     HomeView()
                         .padding(.bottom, 90)

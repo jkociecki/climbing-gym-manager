@@ -93,8 +93,6 @@ struct PostView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                
-                
                 Image(uiImage: post.profilePicture ?? UIImage(named: "default_avatar")!)
                     .resizable()
                     .scaledToFill()
