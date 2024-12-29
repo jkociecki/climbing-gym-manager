@@ -9,9 +9,9 @@
 import SwiftUI
 
 struct GestureTransformView: UIViewRepresentable {
-    @Binding var transform: CGAffineTransform
-    var paths: [Sector]
-    var onAreaTapped: ((Int, String) -> Void)?
+    @Binding var transform:     CGAffineTransform
+    @Binding var paths:         [Sector]
+    var onAreaTapped:           ((Int, String) -> Void)?
     
     @State private var viewSize: CGSize = .zero
     @State private var initialTransform: CGAffineTransform = .identity
@@ -83,19 +83,19 @@ struct GestureTransformView: UIViewRepresentable {
 
 extension GestureTransformView {
     class Coordinator: NSObject, UIGestureRecognizerDelegate {
-        var parent: GestureTransformView
-        var tapRecognizer: UITapGestureRecognizer?
-        var zoomRecognizer: UIPinchGestureRecognizer?
-        var panRecognizer: UIPanGestureRecognizer?
+        var parent:             GestureTransformView
+        var tapRecognizer:      UITapGestureRecognizer?
+        var zoomRecognizer:     UIPinchGestureRecognizer?
+        var panRecognizer:      UIPanGestureRecognizer?
         var currentZoomedIndex: Int? = nil
-        var initialTransform: CGAffineTransform = .identity
+        var initialTransform:   CGAffineTransform = .identity
         
-        var startTransform: CGAffineTransform = .identity
-        var previousScale: CGFloat = 1.0
+        var startTransform:     CGAffineTransform = .identity
+        var previousScale:      CGFloat = 1.0
         var initialPinchCenter: CGPoint = .zero
         
-        let minScale: CGFloat = 0.1
-        let maxScale: CGFloat = 5.0
+        let minScale:           CGFloat = 0.1
+        let maxScale:           CGFloat = 5.0
         
         init(_ parent: GestureTransformView) {
             self.parent = parent
@@ -103,15 +103,15 @@ extension GestureTransformView {
         
         @objc func handleTap(_ gesture: UITapGestureRecognizer) {
             guard let gestureView = gesture.view else { return }
-            
+
             let location = gesture.location(in: gestureView)
             let inverseTransform = parent.transform.inverted()
             let transformedLocation = location.applying(inverseTransform)
             
             for (sectorIndex, sector) in parent.paths.enumerated() {
                 if sector.id == "nclick" { continue }
-                
                 for pathWrapper in sector.paths {
+                    
                     if pathWrapper.path.contains(transformedLocation) {
                         handleAreaTap(sectorIndex: sectorIndex,
                                     pathWrapper: pathWrapper,
@@ -198,11 +198,9 @@ extension GestureTransformView {
                    case .changed:
                        let translation = gesture.translation(in: gesture.view)
                        
-                       // Oblicz aktualną skalę
                        let currentScale = sqrt(parent.transform.a * parent.transform.a +
                                             parent.transform.c * parent.transform.c)
                        
-                       // Dostosuj prędkość przesuwania odwrotnie proporcjonalnie do skali
                        let adjustedTranslationX = translation.x / currentScale
                        let adjustedTranslationY = translation.y / currentScale
                        
@@ -218,8 +216,8 @@ extension GestureTransformView {
                }
         
         private func animateTransform(to targetTransform: CGAffineTransform) {
-            let animationDuration: TimeInterval = 0.3
-            let steps: Int = 60
+            let animationDuration:      TimeInterval = 0.3
+            let steps:                  Int = 60
             let interval = animationDuration / Double(steps)
             
             let initialTransform = parent.transform
@@ -242,8 +240,7 @@ extension GestureTransformView {
             to: CGAffineTransform,
             t: CGFloat
         ) -> CGAffineTransform {
-            //let t = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t
-            let easedT = sin((t * .pi) / 2) // Wolny początek, płynne przyspieszenie
+            let t = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t
             return CGAffineTransform(
                 a: from.a + (to.a - from.a) * t,
                 b: from.b + (to.b - from.b) * t,

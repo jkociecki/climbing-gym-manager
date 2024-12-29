@@ -2,17 +2,116 @@
 //  GymChatModel.swift
 //  cgm
 //
-//  Created by Jędrzej Kocięcki on 29/12/2024.
+//  Created by Jędrzej Kocięcki on 26/12/2024.
 //
 
+
+import Foundation
 import SwiftUI
 
-struct GymChatModel: View {
-    var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
-    }
+struct Post: Identifiable, Equatable {
+    let id =            UUID()
+    let post_id:        Int
+    let userName:       String
+    let userImage:      String
+    let date:           String
+    let content:        String
+    let uid:            String
+    let profilePicture: UIImage?
 }
 
-#Preview {
-    GymChatModel()
+
+class GymChatModel: ObservableObject {
+    @Published private(set) var posts:          [Post] = []
+    @Published private(set) var isLoading:      Bool = false
+    @Published private(set) var hasMorePosts:   Bool = true
+    
+    private var currentPage:                Int = 0
+    private var userCache:                  [Int: String] = [:]
+    private var userCacheUID:               [Int: String] = [:]
+    private var userProfilePictureCache:    [Int: Data] = [:]
+    
+    private let formatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        return formatter
+    }()
+    
+    @MainActor
+    func loadInitialPosts() async {
+        currentPage = 1
+        posts = []
+        hasMorePosts = true
+        await loadMorePosts()
+    }
+    
+    @MainActor
+    func refreshPosts() async {
+        await loadInitialPosts()
+    }
+    
+    @MainActor
+    func loadMorePosts() async {
+        guard !isLoading && hasMorePosts else { return }
+        
+        isLoading = true
+        
+        do {
+            let newPosts = try await DatabaseManager.shared.getPaginatedPosts(page: currentPage)
+            await loadUserNames(for: newPosts)
+            
+            if newPosts.isEmpty {
+                hasMorePosts = false
+            } else {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    posts.append(contentsOf: newPosts.map { post in
+                        let userImage = userProfilePictureCache[post.user_id] != nil ? "profile_picture_\(post.user_id)" : "default_avatar"
+                        let profilePicture = userProfilePictureCache[post.user_id].flatMap { UIImage(data: $0) }
+                        return Post(
+                            post_id: post.post_id,
+                            userName: userCache[post.user_id] ?? "Anonymous",
+                            userImage: userImage,
+                            date: formatter.string(from: post.created_at),
+                            content: post.text,
+                            uid: userCache[post.user_id] ?? "",
+                            profilePicture: profilePicture
+                        )
+                    })
+                }
+                currentPage += 1
+            }
+        } catch {
+            print("Error loading posts: \(error)")
+            hasMorePosts = false
+        }
+        
+        isLoading = false
+    }
+
+    private func loadUserNames(for posts: [PostsD]) async {
+        for post in posts where userCache[post.user_id] == nil {
+            if let userData = try? await DatabaseManager.shared.getUserOverID(userID: String(post.user_id)) {
+                let fullName = (userData.name ?? "Anonymous") + " " + (userData.surname ?? "")
+                userCache[post.user_id] = fullName
+                userCacheUID[post.user_id] = userData.uid.uuidString
+                
+                Task {
+                    do {
+                        if let imgData = try? await StorageManager.shared.fetchUserProfilePicture(user_uid: userData.uid.uuidString) {
+                            userProfilePictureCache[post.user_id] = imgData
+                        } else {
+                            userProfilePictureCache[post.user_id] = nil
+                        }
+                    } catch {
+                        print("Error fetching user profile picture: \(error)")
+                    }
+                }
+            }
+        }
+    }
+
+    func loadUserProfilePictureOverUID(uid: String) async throws -> Data? {
+        let img = try await StorageManager.shared.fetchUserProfilePicture(user_uid: uid)
+        return img
+    }
 }

@@ -39,7 +39,7 @@ struct RankingView: View {
             // Dodanie SearchBar
             SearchBar(text: $searchText)
 
-            SelectGender(selectedGender: $selectedGender)
+            SelectGenderMikolajKradnieNazwe(selectedGender: $selectedGender)
 
             Divider()
                 .background(Color.gray)
@@ -84,7 +84,7 @@ struct SearchBar: View {
         
 }
 
-struct SelectGender: View {
+struct SelectGenderMikolajKradnieNazwe: View {
     @Binding var selectedGender: Int
     
     init(selectedGender: Binding<Int>) {

@@ -18,7 +18,7 @@ struct Sector {
     var id: String
 }
 
-class SVGParser {
+class SVGConverter {
     private var sectors: [Sector] = []
     
     func parseSVG(from svg: String) -> [Sector] {

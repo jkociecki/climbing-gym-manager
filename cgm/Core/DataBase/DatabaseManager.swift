@@ -8,10 +8,25 @@ class DatabaseManager {
     
     static let shared = DatabaseManager()
     
+    func getCurrentUserDataBaseID() async throws -> Int {
+        let user_uuid = try await client.auth.session.user.id
+        let user: UserID = try await client
+                            .from("Users")
+                            .select("*")
+                            .eq("uid", value: user_uuid)
+                            .single()
+                            .execute()
+                            .value
+        print("current user: ", user)
+        return user.id
+        
+    }
+    
     func createUserEntity(userData: User) async throws {
        let response = try await client.from("Users").insert(userData).execute()
        print(response.data)
     }
+    
     
     func editUserEntity(userData: User) async throws{
         let response = try await client.from("Users").update(userData).execute()
@@ -49,6 +64,7 @@ class DatabaseManager {
     func getCurrentGymSectors() async throws -> [SectorD] {
         let currentGymId = UserDefaults.standard.string(forKey: "selectedGym")
         let sectors: [SectorD] = try await client.from("Sectors").select("*").eq("gymID", value: currentGymId).execute().value
+        print("SEKTORY ", sectors)
         return sectors
     }
     
@@ -68,6 +84,18 @@ class DatabaseManager {
             .value
         return vote
     }
+    
+    
+    func getPostComments(post_id: Int) async throws -> [CommentsD] {
+        let comments: [CommentsD] = try await client
+            .from("Comments")
+            .select("*")
+            .eq("post_id", value: post_id)
+            .execute()
+            .value
+        return comments
+    }
+
         
     func getStarVote(boulderID: Int, userID: String) async throws -> StarVote? {
         let vote: StarVote? = try await client
@@ -104,6 +132,12 @@ class DatabaseManager {
         return data
     }
     
+    func uploadPostComment(comment: CommentUpload) async throws {
+        try await client
+            .from("Comments")
+            .insert(comment)
+            .execute()
+    }
     
     func updateStarVote(starVote: StarVote) async throws {
         let response = try await client
@@ -136,10 +170,10 @@ class DatabaseManager {
             .select("*")
             .eq("boulder_id", value: boulderID)
             .eq("user_id", value: userID)
-            .limit(1)
+            .limit(1) // Pobierz maksymalnie jeden rekord
             .execute()
             .value
-        return data.first
+        return data.first // Zwróć pierwszy element lub nil, jeśli brak wyników
     }
     
     func getUser(userID: String) async throws -> User? {
@@ -147,6 +181,16 @@ class DatabaseManager {
             .from("Users")
             .select("*")
             .eq("uid", value: userID)
+            .single()
+            .execute()
+            .value
+        return data
+    }
+    func getUserOverID(userID: String) async throws -> User? {
+        let data: User? = try await client
+            .from("Users")
+            .select("*")
+            .eq("id", value: userID)
             .single()
             .execute()
             .value
@@ -162,18 +206,6 @@ class DatabaseManager {
             .execute()
         print("Deleted response: \(response.data)")
     }
-    
-    func getUserDetails(userID: String) async throws -> User? {
-        let data: [User] = try await client
-            .from("Users")
-            .select("*")
-            .eq("uid", value: userID)
-            .limit(1)
-            .execute()
-            .value
-        return data.first
-    }
-
     
 
 
@@ -197,6 +229,8 @@ class DatabaseManager {
             AllGradeGroupedVotes(difficulty: difficulty, votes: voteList.count)
         }
         
+        let allDifficulties = ["4A", "4A+", "4B", "4B+", "4C", "4C+", "5A", "5A+", "5B", "5B+", "5C", "5C+", "6A", "6A+", "7A", "7A+", "7B", "7B+", "7C", "7C+", "8A", "8A+", "8B", "8B+", "8C", "8C+", "9A", "9A+", "9B", "9B+", "9C", "9C+"]
+        
         let currentIndex = allDifficulties.firstIndex(of: boulderDifficulty) ?? 0
         
         let lowerBound = max(0, currentIndex - 4)
@@ -217,16 +251,6 @@ class DatabaseManager {
         }
         
         return result
-    }
-    
-    func getToppedBoulders(forUserID userID: String) async throws -> [ToppedBy] {
-        let toppedBoulders = try await client
-            .from("ToppedBy")
-            .select("*")
-            .eq("user_id", value: userID)
-            .execute().value as [ToppedBy]
-        
-        return toppedBoulders
     }
 
         
@@ -262,7 +286,42 @@ class DatabaseManager {
         
         return sector
     }
-    
+
+    func getPaginatedPosts(page: Int) async throws -> [PostsD] {
+        let currentGymId = UserDefaults.standard.string(forKey: "selectedGym")
+        let pageSize = 10
+        let start = (page - 1) * pageSize  // Zmiana tutaj
+        
+        let posts: [PostsD] = try await client
+            .from("Posts")
+            .select("*")
+            .eq("gym_id", value: currentGymId)
+            .range(from: start, to: start + (pageSize - 1))  // Zmiana tutaj
+            .order("post_id", ascending: false)
+            .execute()
+            .value
+        
+        return posts
+    }
+    func getUserDetails(userID: String) async throws -> User? {
+        let data: [User] = try await client
+            .from("Users")
+            .select("*")
+            .eq("uid", value: userID)
+            .limit(1)
+            .execute()
+            .value
+        return data.first
+    }
+    func getToppedBoulders(forUserID userID: String) async throws -> [ToppedBy] {
+        let toppedBoulders = try await client
+            .from("ToppedBy")
+            .select("*")
+            .eq("user_id", value: userID)
+            .execute().value as [ToppedBy]
+        
+        return toppedBoulders
+    }
     func getUserStats(userID: String) async throws -> (flashes: Int, tops: Int) {
         let data: [ToppedBy] = try await client
             .from("ToppedBy")
@@ -276,7 +335,6 @@ class DatabaseManager {
         
         return (flashes, tops)
     }
-
 
     
 }
@@ -293,6 +351,10 @@ struct User: Encodable, Decodable{
     var name:           String?
     var surname:        String?
     var gender:         Bool?
+}
+
+struct UserID: Encodable, Decodable{
+    var id:             Int
 }
 
 struct GymD: Identifiable, Decodable{
@@ -340,4 +402,26 @@ struct ToppedBy: Encodable, Decodable {
     var boulder_id: Int
     var is_flashed: Bool
     var created_at: String?
+}
+
+struct PostsD: Encodable, Decodable {
+    var post_id:   Int
+    var created_at: Date
+    var text:      String
+    var user_id:       Int
+    var gym_id:     Int
+}
+
+struct CommentsD: Encodable, Decodable {
+    var comment_id:    Int
+    var created_at: Date
+    var content: String
+    var user_id: Int
+    var post_id: Int
+}
+
+struct CommentUpload: Encodable, Decodable {
+    var content: String
+    var user_id: Int
+    var post_id: Int
 }

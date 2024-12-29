@@ -11,6 +11,10 @@ import Supabase
 class SetUpAccountModel: ObservableObject {
     @Published var userData: User? = nil
     @Published var errorMessage: String? = nil
+    @Published var showImagePicker = false
+    @Published var imageData: Data?
+
+
     
     init() {
         Task {

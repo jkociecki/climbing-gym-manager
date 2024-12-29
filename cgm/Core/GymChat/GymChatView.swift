@@ -7,110 +7,145 @@
 
 import SwiftUI
 
-struct Post: Identifiable {
-    let id = UUID()
-    let userName: String
-    let userImage: String
-    let date: String
-    let content: String
-}
 
-struct ContentView: View {
-    @State private var posts: [Post] = [
-        Post(userName: "Wade Warren",
-             userImage: "person1", // Placeholder name for system image
-             date: "8 lis 2024",
-             content: "Cześć, szukam kogoś do wspólnego wspinania w weekend – ścianka \"Vertical Dream\", poziom 5c-6a. Ktoś chętny? ✨ Zapraszam na dobrą zabawę i może kawę po treningu ☕!"),
-        
-        Post(userName: "Jane Cooper",
-             userImage: "person2",
-             date: "8 lis 2024",
-             content: "Dziś znowu przegrałem z \"Kobaltową Ścianą\" 😅 Ale kto się nie poddaje, ten kiedyś zawisnąć na topie musi! 💪😂"),
-        
-        Post(userName: "Leise Alexander",
-             userImage: "person3",
-             date: "8 lis 2024",
-             content: "Nowa trasa w \"Gravity Spot\" – Zielona Grota 6b+. 💣 Kto pierwszy w tym tygodniu wchodzi na top, wygrywa pizzę na mój koszt! 🍕🔥 Czas start!")
-    ]
+
+import SwiftUI
+
+struct GymChatView: View {
+    @StateObject private var gymChatModel = GymChatModel()
+    @State private var selectedPost: Post? = nil
+    @State private var showComments = false
+
     
     var body: some View {
-        NavigationView {
-            ZStack{
-                Color(hex: "F7F7F7").ignoresSafeArea()
-                PostView(post: posts[1])
-
+        NavigationStack {
+            ScrollView {
+                LazyVStack(spacing: 16) {
+                    ForEach(gymChatModel.posts) { post in
+                        PostView(post: post)
+                            .transition(.opacity)
+                            .onTapGesture {
+                                selectedPost = post
+                                showComments = true
+                            }
+                            .onAppear {
+                                if post.id == gymChatModel.posts.last?.id {
+                                    Task {
+                                        print("new posts coming")
+                                        await gymChatModel.loadMorePosts()
+                                    }
+                                }
+                            }
+                    }
+                    
+                    if gymChatModel.isLoading {
+                        loadingIndicator
+                    }
+                    
+                    if !gymChatModel.hasMorePosts && !gymChatModel.posts.isEmpty {
+                        endOfContentIndicator
+                    }
+                }
+                .padding()
             }
-        }.background(Color(hex: "#F7F7F7"))
+            .refreshable {
+                await gymChatModel.refreshPosts()
+            }
+            .onAppear {
+                Task {
+                    await gymChatModel.loadInitialPosts()
+                }
+            }
+            .navigationDestination(isPresented: $showComments) {
+                if let post = selectedPost {
+                    PostCommentsView(post: post, showComments: $showComments)
+                        .navigationBarBackButtonHidden(true)
+                }
+            }
+        }
+    }
+    private var loadingIndicator: some View {
+        HStack(spacing: 8) {
+            ProgressView()
+                .scaleEffect(1.2)
+            Text("Loading posts...")
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .transition(.opacity)
+    }
+    
+    private var endOfContentIndicator: some View {
+        Text("No more posts to load")
+            .foregroundColor(.secondary)
+            .padding()
+            .transition(.opacity)
     }
 }
 
 struct PostView: View {
     let post: Post
     
-    init(post :Post) {
+    init(post: Post) {
         self.post = post
     }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Image(systemName: "person.crop.circle.fill") // Domyślna ikona użytkownika
+                
+                
+                Image(uiImage: post.profilePicture ?? UIImage(named: "default_avatar")!)
                     .resizable()
-                    .frame(width: 40, height: 40)
-                    .foregroundColor(.gray)
+                    .scaledToFill()
+                    .frame(width: 33, height: 33)
+                    .clipShape(Circle())
+                
                 
                 VStack(alignment: .leading) {
                     Text(post.userName)
-                        .font(.custom("Inter18pt-Light", size: 33))
+                        .font(.custom("Inter18pt-Regular", size: 15))
                     Text(post.date)
-                        .font(.footnote)
+                        .font(.custom("Inter18pt-Light", size: 12))
                         .foregroundColor(.gray)
                 }
                 Spacer()
                 
                 Text("5 min ago")
-                    .font(.footnote)
+                    .font(.custom("Inter18pt-Light", size: 12))
                     .foregroundColor(.gray)
             }
+            .padding(.horizontal, 2)
+
             
             Text(post.content)
-                .font(.body)
+                .font(.custom("Inter18pt-Regular", size: 14))
                 .lineLimit(nil)
                 .padding(.top, 4)
+                .padding(.horizontal, 8)
             
-            Divider()
-                .padding(.top, 20)
             
             HStack {
-                Button(action: {
-                    // Akcja odpowiedzi
-                }) {
-                    HStack {
-                        Image(systemName: "bubble.left")
-                        Text("Odpowiedz")
-                    }
-                }
-                .foregroundColor(.blue)
+                 
+                Image(systemName: "bubble.left")
+                    .foregroundStyle(.black)
+                Text("Odpowiedz")
+                    .font(.custom("Inter18pt-SemiBold", size: 12))
+                    .foregroundStyle(.black)
+                                    
                 
-                Spacer()
-                Text("+7 Komentarze")
-                    .font(.subheadline)
-                    .foregroundColor(.gray)
             }
             .padding(.top, 4)
+            .padding(.horizontal, 2)
+
         }
-        .background(Rectangle()
-            .foregroundStyle(Color(.white))
-            .cornerRadius(15)
-        )
         .padding()
     }
 }
 
-// Podgląd w Xcode
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
-        ContentView()
+        GymChatView()
     }
 }
 
