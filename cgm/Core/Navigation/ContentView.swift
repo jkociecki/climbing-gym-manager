@@ -5,52 +5,52 @@ struct MainView: View {
     @State private var selectedTab: String = "housee"
     @State private var showSideMenu: Bool = false
     @State private var selectedView: String = "Home"
+    @State private var showFilterPanel: Bool = false
+
     
     var body: some View {
-        ZStack(alignment: .bottom) {
-            // Main Content Stack
-            
-            VStack{
-                TopBar(config: getTopBarConfig())
-                    .zIndex(1)
-                    .offset(x: showSideMenu ? UIScreen.main.bounds.width * 0.8 : 0)
-                   
-
+            ZStack(alignment: .bottom) {
+                // Main Content Stack
+                VStack {
+                    TopBar(config: getTopBarConfig())
+                        .zIndex(1)
+                        .offset(x: showSideMenu ? UIScreen.main.bounds.width * 0.8 : 0)
                     
-                TabView(selectedTab: $selectedTab, selectedView: $selectedView)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-
-            
-            // Custom Tab Bar nakładający się na zawartość
-            CustomTabBar(selectedTab: $selectedTab, onTabSelected: { tab in
-                            // Update both selectedTab and selectedView
-                            selectedTab = tab
-                            selectedView = getDefaultViewForTab(tab)
-                        })
+                    TabView(selectedTab: $selectedTab, selectedView: $selectedView)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                
+                // Custom Tab Bar
+                CustomTabBar(selectedTab: $selectedTab, onTabSelected: { tab in
+                    selectedTab = tab
+                    selectedView = getDefaultViewForTab(tab)
+                })
                 .offset(x: showSideMenu ? UIScreen.main.bounds.width * 0.8 : 0)
-                .padding(.bottom, -40) // Oddalenie od dolnej krawędzi o 20 punktów
-            
-            // Side Menu Overlay
-            if showSideMenu {
-                Color.black
-                    .opacity(0.5)
-                    .ignoresSafeArea()
-                    .onTapGesture {
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            showSideMenu = false
+                .padding(.bottom, -40)
+                
+                // Side Menu Overlay
+                if showSideMenu {
+                    Color.black
+                        .opacity(0.5)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                showSideMenu = false
+                            }
                         }
-                    }
+                }
+                
+                // Side Menu
+                SideMenuView(showSideMenu: $showSideMenu, selectedView: $selectedView)
+                    .zIndex(1)
+                
+                // Filter Panel
+                SlidingFilterPanel(isShowing: $showFilterPanel)
+                    .zIndex(2)
             }
-            
-            // Side Menu
-            SideMenuView(showSideMenu: $showSideMenu, selectedView: $selectedView)
-                .zIndex(1)
+            .ignoresSafeArea(.keyboard, edges: .bottom)
+            .animation(.easeInOut(duration: 0.3), value: showSideMenu)
         }
-        .ignoresSafeArea(.keyboard, edges: .bottom)
-        .animation(.easeInOut(duration: 0.3), value: showSideMenu)
-    }
-    
     private func getTopBarConfig() -> TopBarConfig {
         switch selectedView {
         case "Home":
@@ -58,7 +58,9 @@ struct MainView: View {
                 title: "Home",
                 leftButton: .menuButton(showSideMenu: $showSideMenu),
                 rightButton: .notification {
-                    print("Home notification tapped")
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                                            showFilterPanel.toggle()
+                                        }
                 }
             )
             
@@ -147,12 +149,10 @@ struct TabView: View {
         }
     }
     
-    // Sprawdza czy aktywna jest nawigacja z TabBara
     private var isTabBarSelection: Bool {
         !selectedTab.isEmpty && selectedView == getDefaultViewForTab(selectedTab)
     }
     
-    // Mapuje tab na odpowiedni widok
     private func getDefaultViewForTab(_ tab: String) -> String {
         switch tab {
         case "house": return "Home"
@@ -175,7 +175,6 @@ struct AddNewView: View {
     }
 }
 
-// MARK: - Example View Implementations
 struct HomeView: View {
     var body: some View {
         VStack(spacing: 20) {
@@ -201,9 +200,7 @@ struct HomeView: View {
     }
 }
 
-// Podobnie zaimplementuj pozostałe widoki...
 
-// MARK: - Preview
 struct MainView_Previews: PreviewProvider {
     static var previews: some View {
         MainView()

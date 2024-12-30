@@ -96,7 +96,6 @@ struct TopBar: View {
                 
                 Spacer()
                 
-                // Right Button (if exists)
                 if let rightButton = config.rightButton {
                     rightButton.buttonView()
                         .padding(.trailing)
@@ -128,7 +127,6 @@ extension Image {
 
 struct HomeTopBarContent: View {
     var body: some View {
-        // Przykładowa dodatkowa zawartość dla Home
         HStack {
             Text("Additional Home Content")
                 .foregroundColor(.white)

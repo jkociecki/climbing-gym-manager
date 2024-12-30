@@ -14,9 +14,7 @@ struct SideMenuView: View {
     
     var body: some View {
         HStack(spacing: 0) {
-            // Menu Content
             VStack(alignment: .leading, spacing: 20) {
-                // Profile Header
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(spacing: 12) {
                         Image(systemName: "person.circle.fill")
