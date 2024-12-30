@@ -848,7 +848,7 @@ struct ToppedByTable: View {
     var boulderID: Int
     
     @State private var toppedByData: [ToppedBy] = []
-    @State private var usersData: [String: (String?, String?)] = [:]
+    @State private var usersData: [String: (String?, String?, Data?)] = [:]
     
     var body: some View {
         VStack(alignment: .leading) {
@@ -859,10 +859,11 @@ struct ToppedByTable: View {
             ForEach(toppedByData, id: \.user_id) { toppedBy in
                 HStack {
                     HStack {
-                        Image(systemName: "person.crop.circle.fill")
+                        Image(uiImage: usersData[toppedBy.user_id]?.2.flatMap { UIImage(data: $0) } ?? UIImage(systemName: "person.crop.circle.fill")!)
                             .resizable()
                             .frame(width: 30, height: 30)
-                            .foregroundColor(.gray)
+                            .clipShape(Circle())
+
                         
                         if let user = usersData[toppedBy.user_id] {
                             Text("\(user.0 ?? "") \(user.1 ?? "")")
@@ -957,13 +958,15 @@ struct ToppedByTable: View {
         for userId in userIds {
             do {
                 if let user = try await DatabaseManager.shared.getUser(userID: userId) {
-                    usersData[userId] = (user.name, user.surname)
+                    let profilePictureData = try? await StorageManager.shared.fetchUserProfilePicture(user_uid: user.uid.uuidString)
+                    usersData[userId] = (user.name, user.surname, profilePictureData)
                 }
             } catch {
                 print("Error fetching user data for userId: \(userId), \(error)")
             }
         }
     }
+
 }
 
 

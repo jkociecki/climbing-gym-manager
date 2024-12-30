@@ -140,12 +140,12 @@ struct RankingUsersView: View {
                             .foregroundColor(.gray)
                             .lineLimit(1)
 
-                        Image("person_img")
+                        Image(uiImage: UIImage(data: user.imageData ?? Data()) ?? UIImage(systemName: "person.crop.circle.fill")!)
                             .resizable()
                             .scaledToFill()
                             .frame(width: 30, height: 30)
                             .clipShape(Circle())
-                            
+
                         HStack {
                             Text(user.name)
                                 .font(.system(size: 14))

@@ -35,6 +35,9 @@ let levels = [
     ("9C", 2100),
     ("9C+", 2200)
 ]
+ 
+
+import Foundation
 
 struct RankingUser: Identifiable {
     var id = UUID()
@@ -43,9 +46,8 @@ struct RankingUser: Identifiable {
     var gender: String
     var level: String
     var progress: String
+    var imageData: Data?
 }
-
-import Foundation
 
 func calculatePointsForBoulder(difficulty: String, isFlashed: Bool) -> Int {
     // Get points for the given difficulty level
@@ -131,12 +133,15 @@ class RankingManager {
             let points = calculatePoints(toppedBoulders: userBoulders, boulders: boulders)
             let (level, progress) = determineLevel(points: points)
             
+            let imageData = try? await StorageManager.shared.fetchUserProfilePicture(user_uid: user.uid.uuidString)
+            
             let rankingUser = RankingUser(
                 name: "\(user.name ?? "") \(user.surname ?? "")", // Jeśli name lub surname są nil, będą puste
                 points: points,
                 gender: user.gender == nil ? "N/A" : (user.gender == true ? "M" : "K"), // Jeśli gender jest nil, używamy "N/A"
                 level: level,
-                progress: progress
+                progress: progress,
+                imageData: imageData
             )
             rankingUsers.append(rankingUser)
         }

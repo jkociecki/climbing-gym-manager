@@ -28,14 +28,12 @@ struct ProfileView: View
                 {
                     UserProfileHeader(
                                     userID: userID,
-                                    statsDescription: "stats and progress",
-                                    profileImage: "person_img"
+                                    statsDescription: "stats and progress"
                                 )
                     DisplayUserStats(userId: userID)
                 }
                 .padding(.horizontal)
                 
-                // Wykres progresu
                 VStack(alignment: .leading, spacing: 16)
                 {
                     Text("User progress")
@@ -96,13 +94,14 @@ struct GraphView: View
 struct UserProfileHeader: View {
     let userID: String
     let statsDescription: String
-    let profileImage: String
 
     @State private var userName: String = "Loading..."
+    @State private var profileImageData: Data?
 
     var body: some View {
         HStack(spacing: 0) {
-            Image(profileImage)
+            // Wyświetlanie zdjęcia profilowego
+            Image(uiImage: UIImage(data: profileImageData ?? Data()) ?? UIImage(systemName: "person.crop.circle.fill")!)
                 .resizable()
                 .scaledToFill()
                 .frame(width: 106, height: 106)
@@ -126,11 +125,16 @@ struct UserProfileHeader: View {
         .onAppear {
             Task {
                 do {
+                    // Pobieranie danych użytkownika
                     let user = try await DatabaseManager.shared.getUser(userID: userID)
                     userName = makeUserName(from: user)
+                    
+                    // Pobieranie zdjęcia profilowego
+                    profileImageData = try? await StorageManager.shared.fetchUserProfilePicture(user_uid: userID)
                 } catch {
-                    print("Failed to load user data: \(error)")
+                    print("Failed to load user data or profile picture: \(error)")
                     userName = "Unknown User"
+                    profileImageData = nil
                 }
             }
         }
@@ -146,6 +150,7 @@ struct UserProfileHeader: View {
         return [firstName, lastName].joined(separator: " ").trimmingCharacters(in: .whitespaces)
     }
 }
+
 
 
 struct DisplayUserStats: View {
