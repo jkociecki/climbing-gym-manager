@@ -7,10 +7,6 @@
 
 import SwiftUI
 
-
-
-import SwiftUI
-
 struct GymChatView: View {
     @StateObject private var gymChatModel = GymChatModel()
     @State private var selectedPost: Post? = nil
@@ -36,6 +32,8 @@ struct GymChatView: View {
                                     }
                                 }
                             }
+                        Divider()
+                            .padding(.horizontal)
                     }
                     
                     if gymChatModel.isLoading {
@@ -99,47 +97,51 @@ struct PostView: View {
                     .frame(width: 33, height: 33)
                     .clipShape(Circle())
                 
-                
                 VStack(alignment: .leading) {
                     Text(post.userName)
                         .font(.custom("Inter18pt-Regular", size: 15))
-                    Text(post.date)
+                    
+                    Text(formattedDate(post.date, dateFormat: "d MMM yyyy"))
                         .font(.custom("Inter18pt-Light", size: 12))
                         .foregroundColor(.gray)
                 }
                 Spacer()
                 
-                Text("5 min ago")
+                Text(timeAgo(from: post.date))
                     .font(.custom("Inter18pt-Light", size: 12))
                     .foregroundColor(.gray)
             }
             .padding(.horizontal, 2)
-
+            .padding(.bottom, 2)
             
             Text(post.content)
                 .font(.custom("Inter18pt-Regular", size: 14))
                 .lineLimit(nil)
                 .padding(.top, 4)
-                .padding(.horizontal, 8)
-            
+                .padding(.horizontal, 3)
             
             HStack {
-                 
                 Image(systemName: "bubble.left")
-                    .foregroundStyle(.black)
-                Text("Odpowiedz")
+                    .resizable()
+                    .frame(width: 13, height: 13)
+                Text("Comment")
                     .font(.custom("Inter18pt-SemiBold", size: 12))
                     .foregroundStyle(.black)
-                                    
                 
+                // Wyświetlenie liczby komentarzy
+                Text("\(post.commentsCount)")
+                    .font(.custom("Inter18pt-SemiBold", size: 12))
+                    .foregroundStyle(.gray)
             }
             .padding(.top, 4)
             .padding(.horizontal, 2)
-
         }
-        .padding()
+        .padding(.horizontal)
+        .padding(.vertical, 3)
     }
 }
+
+
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {

@@ -95,6 +95,30 @@ class DatabaseManager {
             .value
         return comments
     }
+    
+    struct PostCommentsCount: Decodable {
+        var post_id: Int
+    }
+
+    func getCommentsCountForPosts(postIds: [Int]) async throws -> [Int: Int] {
+        print("A")
+        let comments: [PostCommentsCount] = try await client
+            .from("Comments")
+            .select("post_id")
+            .in("post_id", values: postIds)
+            .execute()
+            .value
+        
+        let groupedComments = Dictionary(grouping: comments, by: { $0.post_id })
+        var commentsCountDict: [Int: Int] = [:]
+        for (postId, commentList) in groupedComments {
+            commentsCountDict[postId] = commentList.count
+        }
+        
+        return commentsCountDict
+    }
+
+
 
         
     func getStarVote(boulderID: Int, userID: String) async throws -> StarVote? {
@@ -228,9 +252,7 @@ class DatabaseManager {
         let allGroupedVotes: [AllGradeGroupedVotes] = groupedVotes.map { difficulty, voteList in
             AllGradeGroupedVotes(difficulty: difficulty, votes: voteList.count)
         }
-        
-        let allDifficulties = ["4A", "4A+", "4B", "4B+", "4C", "4C+", "5A", "5A+", "5B", "5B+", "5C", "5C+", "6A", "6A+", "7A", "7A+", "7B", "7B+", "7C", "7C+", "8A", "8A+", "8B", "8B+", "8C", "8C+", "9A", "9A+", "9B", "9B+", "9C", "9C+"]
-        
+            
         let currentIndex = allDifficulties.firstIndex(of: boulderDifficulty) ?? 0
         
         let lowerBound = max(0, currentIndex - 4)

@@ -124,11 +124,13 @@ struct PostCommentsView: View {
 }
 
 
+import SwiftUI
+
 struct CommentView: View {
     var image: UIImage
     var nickname: String
     var content: String
-    var timestamp: Date
+    var timestamp: Date // timestamp is now a Date
 
     var body: some View {
         HStack(alignment: .top, spacing: 1) {
@@ -143,9 +145,11 @@ struct CommentView: View {
                     Text(nickname)
                         .font(.custom("Inter18pt-Medium", size: 12))
                     Spacer()
-                    Text(timestamp.formatted())
+                    // Format the Date directly in the view
+                    Text(formattedDate(formatDate(timestamp), dateFormat: "d MMM yyyy,  HH:mm"))
+//                    Text(timestamp.formatted())
                         .font(.custom("Inter18pt-Light", size: 10))
-                        .padding(.trailing, 30)
+                        .padding(.trailing, 5)
                         .multilineTextAlignment(.trailing)
                 }
                 Text(content)

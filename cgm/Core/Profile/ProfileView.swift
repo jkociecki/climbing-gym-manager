@@ -179,37 +179,15 @@ struct DisplayUserStats: View {
             }
         }
     }
+    
 
     private var sinceText: String {
         if let date = accountCreationDate {
-            return "since \(formattedDate(date))"
+            return "since \(formattedDate(date, dateFormat: "MMM yyyy"))"
         } else {
             return ""
         }
     }
-    
-    private func formattedDate(_ date: String) -> String {
-
-        let customFormatter = DateFormatter()
-        customFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXXXX"
-        customFormatter.locale = Locale(identifier: "en_US_POSIX")
-        customFormatter.timeZone = TimeZone(secondsFromGMT: 0)
-
-        if let dateObject = customFormatter.date(from: date) {
-            return formatDateObject(dateObject)
-        }
-
-        print("Nie udało się sformatować daty: \(date)")
-        return date
-    }
-
-    private func formatDateObject(_ date: Date) -> String {
-        let displayFormatter = DateFormatter()
-        displayFormatter.dateFormat = "MMM yyyy" 
-        displayFormatter.locale = Locale(identifier: "en_US_POSIX")
-        return displayFormatter.string(from: date)
-    }
-
 
 }
 

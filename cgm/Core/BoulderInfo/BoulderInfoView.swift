@@ -909,38 +909,6 @@ struct ToppedByTable: View {
         }
     }
 
-    private func timeAgo(from dateString: String) -> String {
-        let formatter = ISO8601DateFormatter()
-        
-        // Spróbuj sparsować datę
-        if let createdDate = formatter.date(from: dateString) {
-            let calendar = Calendar.current
-            let now = Date()
-
-            let components = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: createdDate, to: now)
-
-            switch (components.year, components.month, components.day, components.hour, components.minute, components.second) {
-            case let (years?, _, _, _, _, _) where years > 0:
-                return "\(years) years ago"
-            case let (_, months?, _, _, _, _) where months > 0:
-                return "\(months) months ago"
-            case let (_, _, days?, _, _, _) where days > 0:
-                return "\(days) days ago"
-            case let (_, _, _, hours?, _, _) where hours > 0:
-                return "\(hours) hours ago"
-            case let (_, _, _, _, minutes?, _) where minutes > 0:
-                return "\(minutes) minutes ago"
-            case let (_, _, _, _, _, seconds?) where seconds > 0:
-                return "\(seconds) seconds ago"
-            default:
-                return "Just now"
-            }
-        }
-        return "Unknown"
-    }
-
-
-
     private func fetchToppedByData() async {
         do {
             let fetchedData = try await DatabaseManager.shared.getBoulderToppedBy(boulderID: boulderID)
