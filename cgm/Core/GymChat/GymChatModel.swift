@@ -23,14 +23,17 @@ struct Post: Identifiable, Equatable {
 
 
 class GymChatModel: ObservableObject {
-    @Published private(set) var posts:          [Post] = []
-    @Published private(set) var isLoading:      Bool = false
-    @Published private(set) var hasMorePosts:   Bool = true
+    @Published private(set) var posts: [Post] = []
+    @Published private(set) var isLoading: Bool = false
+    @Published private(set) var hasMorePosts: Bool = true
+    
+    private var loadingTask: Task<Void, Never>?
     
     private var currentPage:                Int = 0
     private var userCache:                  [Int: String] = [:]
     private var userCacheUID:               [Int: String] = [:]
     private var userProfilePictureCache:    [Int: Data] = [:]
+    private var wasLoaded:                  Bool    = false
     
     private let formatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -38,6 +41,18 @@ class GymChatModel: ObservableObject {
         return formatter
     }()
 
+    @MainActor
+    private func setLoading(_ loading: Bool) async {
+        if loading {
+            isLoading = true
+            if !wasLoaded && posts.isEmpty {  // dodatkowe sprawdzenie posts.isEmpty
+                try? await Task.sleep(nanoseconds: 1000_000_000)
+            }
+        } else {
+            isLoading = false
+        }
+        wasLoaded = true
+    }
     
     @MainActor
     func loadInitialPosts() async {
@@ -56,48 +71,51 @@ class GymChatModel: ObservableObject {
     func loadMorePosts() async {
         guard !isLoading && hasMorePosts else { return }
         
-        isLoading = true
-        
-        do {
-            // Pobieramy posty
-            let newPosts = try await DatabaseManager.shared.getPaginatedPosts(page: currentPage)
+        loadingTask?.cancel()
+        loadingTask = Task {
+            await setLoading(true)
             
-            if newPosts.isEmpty {
-                hasMorePosts = false
-            } else {
-                // Pobieramy komentarze dla wszystkich postów w tym zapytaniu
-                let postIds = newPosts.map { $0.post_id }
-                let commentsCountDict = try await DatabaseManager.shared.getCommentsCountForPosts(postIds: postIds)
+            do {
+                let newPosts = try await DatabaseManager.shared.getPaginatedPosts(page: currentPage)
                 
-                // Mapujemy posty i dodajemy do nich liczbę komentarzy
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    posts.append(contentsOf: newPosts.map { post in
-                        let userImage = userProfilePictureCache[post.user_id] != nil ? "profile_picture_\(post.user_id)" : "default_avatar"
-                        let profilePicture = userProfilePictureCache[post.user_id].flatMap { UIImage(data: $0) }
-                        
-                        // Liczba komentarzy dla postu z mapy komentarzy
-                        let commentsCount = commentsCountDict[post.post_id] ?? 0
-                        
-                        return Post(
-                            post_id: post.post_id,
-                            userName: userCache[post.user_id] ?? "Anonymous",
-                            userImage: userImage,
-                            date: formatter.string(from: post.created_at),
-                            content: post.text,
-                            uid: userCache[post.user_id] ?? "",
-                            profilePicture: profilePicture,
-                            commentsCount: commentsCount // Liczba komentarzy
-                        )
-                    })
+                if newPosts.isEmpty {
+                    hasMorePosts = false
+                } else {
+                    let postIds = newPosts.map { $0.post_id }
+                    let commentsCountDict = try await DatabaseManager.shared.getCommentsCountForPosts(postIds: postIds)
+                    
+                    if !Task.isCancelled {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            posts.append(contentsOf: newPosts.map { post in
+                                let userImage = userProfilePictureCache[post.user_id] != nil ? "profile_picture_\(post.user_id)" : "default_avatar"
+                                let profilePicture = userProfilePictureCache[post.user_id].flatMap { UIImage(data: $0) }
+                                
+                                let commentsCount = commentsCountDict[post.post_id] ?? 0
+                                
+                                return Post(
+                                    post_id: post.post_id,
+                                    userName: userCache[post.user_id] ?? "Anonymous",
+                                    userImage: userImage,
+                                    date: formatter.string(from: post.created_at),
+                                    content: post.text,
+                                    uid: userCache[post.user_id] ?? "",
+                                    profilePicture: profilePicture,
+                                    commentsCount: commentsCount
+                                )
+                            })
+                        }
+                        currentPage += 1
+                    }
                 }
-                currentPage += 1
+            } catch {
+                print("Error loading posts: \(error)")
+                hasMorePosts = false
             }
-        } catch {
-            print("Error loading posts: \(error)")
-            hasMorePosts = false
+            
+            if !Task.isCancelled {
+                await setLoading(false)
+            }
         }
-        
-        isLoading = false
     }
 
 

@@ -16,8 +16,10 @@ struct AppUser{
 
 
 
-class AuthManager{
+class AuthManager: ObservableObject {
     static let shared = AuthManager()
+    @Published var isAuthenticated = false
+
     
     private init() {}
     
@@ -41,6 +43,20 @@ class AuthManager{
     
     func storeUser(){
         
+    }
+    
+    @MainActor
+    func checkAuth() async {
+        do {
+            if try await client.auth.session.isExpired == false {
+                isAuthenticated = true
+            } else {
+                isAuthenticated = false
+            }
+        } catch {
+            print("Error checking auth status: \(error)")
+            isAuthenticated = false
+        }
     }
     
 }

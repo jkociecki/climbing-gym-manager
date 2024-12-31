@@ -10,24 +10,20 @@ struct PostCommentsView: View {
     @State var post: Post
     @State private var commentContent: String = ""
     @State private var comments: [CommentsD] = []
-    @Binding var showComments: Bool
     @State private var userCache: [Int: String] = [:]
-    @State private var userProfilePicturesCache: [Int: UIImage] = [:]  // Pamięć podręczna na zdjęcia
-
+    @State private var userProfilePicturesCache: [Int: UIImage] = [:]
+    
     private func loadUserNames() async {
         for comment in comments {
             if let userData = try? await DatabaseManager.shared.getUserOverID(userID: String(comment.user_id)) {
                 let fullName = (userData.name ?? "Anonymous") + " " + (userData.surname ?? "")
                 userCache[comment.user_id] = fullName
                 
-                // Sprawdzamy, czy zdjęcie profilowe jest dostępne
                 Task {
                     do {
                         if let imgData = try? await StorageManager.shared.fetchUserProfilePicture(user_uid: userData.uid.uuidString) {
-                            // Jeśli jest dostępne, zapisujemy w cache
                             userProfilePicturesCache[comment.user_id] = UIImage(data: imgData)
                         } else {
-                            // Jeśli brak zdjęcia, przypisujemy domyślne zdjęcie
                             userProfilePicturesCache[comment.user_id] = UIImage(named: "default_avatar")
                         }
                     } catch {
@@ -37,7 +33,7 @@ struct PostCommentsView: View {
             }
         }
     }
-
+    
     private func uploadComment(comment: CommentUpload) async {
         do {
             try await DatabaseManager.shared.uploadPostComment(comment: comment)
@@ -55,67 +51,84 @@ struct PostCommentsView: View {
             print("Błąd podczas ładowania komentarzy: \(error)")
         }
     }
-
+    
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            Color.background
-            VStack(alignment: .leading, spacing: 16) {
-                Button(action: {
-                    showComments = false
-                }) {
-                    HStack {
-                        Image(systemName: "arrowshape.backward")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.fioletowy)
-                        Text("Back")
-                            .font(.custom("Inter18pt-Light", size: 15))
-                            .foregroundColor(.fioletowy)
-                    }
-                }
-                .padding(.top, 16)
-                .padding(.leading, 16)
-
-                PostView(post: post)
-
-                Divider()
-
-                ScrollView {
-                    ForEach(comments, id: \.comment_id) { comment in
-                        let profileImage = userProfilePicturesCache[comment.user_id] ?? UIImage(named: "default_avatar")!
-                        CommentView(image: profileImage, nickname: userCache[comment.user_id] ?? "Anonymous", content: comment.content, timestamp: comment.created_at)
-                    }
-                }
-                .frame(maxHeight: .infinity)
-
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    TextField("Dodaj Komentarz", text: $commentContent)
-                        .padding(.vertical, 10)
-                        .padding(.horizontal, 20)
-                        .background(RoundedRectangle(cornerRadius: 30)
-                            .foregroundStyle(Color.white.opacity(0.2))
-                        )
-                        .padding(.horizontal, 15)
+                    Image(uiImage: post.profilePicture ?? UIImage(named: "default_avatar")!)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 33, height: 33)
+                        .clipShape(Circle())
+                        .background(Circle().stroke(LinearGradient(
+                                                        gradient: Gradient(colors: [.fioletowy, .czerwony]),
+                                                        startPoint: .leading,
+                                                        endPoint: .trailing
+                                                    ), lineWidth: 4))
 
-                    Image(systemName: "paperplane")
-                        .padding(.trailing, 20)
-                        .foregroundColor(.fioletowy)
-                        .onTapGesture {
-                            Task {
-                                do {
-                                    let currentUserID = try await DatabaseManager.shared.getCurrentUserDataBaseID()
-                                    await uploadComment(comment: CommentUpload(content: commentContent, user_id: currentUserID, post_id: post.post_id))
-                                    commentContent = ""
-                                } catch {
-                                    print("Błąd:", error)
-                                }
-                            }
-                        }
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(post.userName)
+                            .font(.custom("Inter18pt-Regular", size: 15))
+                        
+                        Text(post.date)
+                            .font(.custom("Inter18pt-Light", size: 12))
+                            .foregroundColor(.gray)
+                            
+                    }
+                    Spacer()
+                    
+                    Text("5 min ago")
+                        .font(.custom("Inter18pt-Light", size: 12))
+                        .foregroundColor(.gray)
                 }
+                .padding(.horizontal, 2)
 
+                Text(post.content)
+                    .font(.custom("Inter18pt-Regular", size: 14))
+                    .lineLimit(nil)
+                    .padding(.top, 4)
+                    .padding(.horizontal, 2)
+                    .lineSpacing(2)
             }
-            .padding(5)
-            .background(RoundedRectangle(cornerRadius: 15).foregroundStyle(.white).opacity(0.2))
+            .padding(.horizontal, 16)
+            
+            Divider()
+                .background(Color(.systemGray2))
+                .padding(.horizontal)
+                .padding(.top)
+            
+            ScrollView {
+                ForEach(comments, id: \.comment_id) { comment in
+                    let profileImage = userProfilePicturesCache[comment.user_id] ?? UIImage(named: "default_avatar")!
+                    CommentView(image: profileImage, nickname: userCache[comment.user_id] ?? "Anonymous", content: comment.content, timestamp: comment.created_at)
+                }
+            }
+            .frame(maxHeight: .infinity)
+            
+            HStack {
+                TextField("Dodaj Komentarz", text: $commentContent)
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 20)
+                    .background(RoundedRectangle(cornerRadius: 30)
+                        .foregroundStyle(Color.white.opacity(0.2))
+                    )
+                    .padding(.horizontal, 15)
+                
+                Image(systemName: "paperplane")
+                    .padding(.trailing, 20)
+                    .foregroundColor(Color.green)
+                    .onTapGesture {
+                        Task {
+                            let currentUserID = try await DatabaseManager.shared.getCurrentUserDataBaseID()
+                            await uploadComment(comment: CommentUpload(content: commentContent, user_id: currentUserID, post_id: post.post_id))
+                            commentContent = ""
+                        }
+                    }
+            }
         }
+        .padding(5)
         .task {
             await fetchComments()
             await loadUserNames()
@@ -123,14 +136,11 @@ struct PostCommentsView: View {
     }
 }
 
-
-import SwiftUI
-
 struct CommentView: View {
     var image: UIImage
     var nickname: String
     var content: String
-    var timestamp: Date // timestamp is now a Date
+    var timestamp: Date
 
     var body: some View {
         HStack(alignment: .top, spacing: 1) {
@@ -145,23 +155,22 @@ struct CommentView: View {
                     Text(nickname)
                         .font(.custom("Inter18pt-Medium", size: 12))
                     Spacer()
-                    // Format the Date directly in the view
-                    Text(formattedDate(formatDate(timestamp), dateFormat: "d MMM yyyy,  HH:mm"))
-//                    Text(timestamp.formatted())
+                    Text(timestamp.formatted())
                         .font(.custom("Inter18pt-Light", size: 10))
-                        .padding(.trailing, 5)
                         .multilineTextAlignment(.trailing)
+                        .foregroundColor(Color(.systemGray))
                 }
+                .padding(.bottom, 2)
                 Text(content)
                     .font(.custom("Inter18pt-Regular", size: 12))
-                    .padding(.trailing, 45)
                     .lineLimit(nil)
+                    .lineSpacing(2)
+
             }
             .padding()
             .background(
                 RoundedRectangle(cornerRadius: 15)
-                    .foregroundStyle(Color(hex: "F8F8F8"))
-                    .shadow(color: .gray.opacity(0.3), radius: 5, x: 0, y: 2)
+                    .foregroundStyle(Color(.systemGray6))
             )
             .padding(.trailing, 20)
             .padding(.top, 10)
