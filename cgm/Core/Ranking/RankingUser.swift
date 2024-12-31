@@ -120,32 +120,59 @@ class RankingManager {
         }
     }
 
-    // Funkcja generująca ranking
+
     func generateRanking() async throws -> [RankingUser] {
+        print("start")
+        guard let idString = UserDefaults.standard.string(forKey: "selectedGym"),
+              let gymID = Int(idString) else {
+            throw NSError(domain: "InvalidGymID", code: 0, userInfo: [NSLocalizedDescriptionKey: "Gym ID is not set or invalid."])
+        }
+
         let users = try await db.client.from("Users").select("*").execute().value as [User]
         let toppedBoulders = try await db.client.from("ToppedBy").select("*").execute().value as [ToppedBy]
         let boulders = try await db.client.from("Boulders").select("*").execute().value as [BoulderD]
-        
+
+
+        let gymBoulders = boulders.filter { $0.gym_id == gymID }
+
+        let gymToppedBoulders = toppedBoulders.filter { toppedBoulder in
+            return gymBoulders.contains { $0.id == toppedBoulder.boulder_id }
+        }
+
+        let gymUsers = users.filter { user in
+            return gymToppedBoulders.contains { $0.user_id == user.uid.uuidString }
+        }
+        print("pobrane wszystkie dane")
+
         var rankingUsers: [RankingUser] = []
-        
-        for user in users {
-            let userBoulders = toppedBoulders.filter { $0.user_id == user.uid.uuidString }
-            let points = calculatePoints(toppedBoulders: userBoulders, boulders: boulders)
+
+        for user in gymUsers {
+            print("kolejny user")
+            // Get the topped boulders for the current user
+            let userBoulders = gymToppedBoulders.filter { $0.user_id == user.uid.uuidString }
+            
+            let points = calculatePoints(toppedBoulders: userBoulders, boulders: gymBoulders)
+            
             let (level, progress) = determineLevel(points: points)
-            
+
             let imageData = try? await StorageManager.shared.fetchUserProfilePicture(user_uid: user.uid.uuidString)
-            
+  
             let rankingUser = RankingUser(
-                name: "\(user.name ?? "") \(user.surname ?? "")", // Jeśli name lub surname są nil, będą puste
+                name: "\(user.name ?? "") \(user.surname ?? "")",
                 points: points,
-                gender: user.gender == nil ? "N/A" : (user.gender == true ? "M" : "K"), // Jeśli gender jest nil, używamy "N/A"
+                gender: user.gender == nil ? "N/A" : (user.gender == true ? "M" : "K"),
                 level: level,
                 progress: progress,
                 imageData: imageData
             )
+            
             rankingUsers.append(rankingUser)
         }
+        print("koniec")
         
+        // Sort the ranking users by points in descending order
         return rankingUsers.sorted(by: { $0.points > $1.points })
     }
+
+
 }

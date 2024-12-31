@@ -14,77 +14,158 @@
     //zrobic zeby gradient byl spokny dla ikonki i tekstu w buttonach
 
 import SwiftUI
-import UIKit
 
-let allDifficulties = ["4A", "4A+", "4B", "4B+", "4C", "4C+", "5A", "5A+", "5B", "5B+", "5C", "5C+", "6A", "6A+", "7A", "7A+", "7B", "7B+", "7C", "7C+", "8A", "8A+", "8B", "8B+", "8C", "8C+", "9A", "9A+", "9B", "9B+", "9C", "9C+"]
+struct BoulderInfoView: View {
+    @StateObject var viewModel: BoulderInfoModel
 
-struct BoulderInfo: View {
-    var boulderID: Int
-    var userID: String = "08BBCE85-0A59-4500-821D-0A235C7C5AEA"
-    
-    @State private var difficulty: String = "Loading..."
-    @State private var sector: String = "Loading..."
-    @State private var routesetter: String = "Loading..."
-    @State private var color: String = "#00000"
-    
     var body: some View {
         ZStack {
             ScrollView {
                 VStack {
                     Spacer()
-                    BoulderTopBar(difficulty: difficulty, sector: sector, routesetter: routesetter, color: color)
-                    Buttons_FL_Done(userID: userID, boulderID: boulderID)
-                    
+                    BoulderTopBar(
+                        difficulty: viewModel.difficulty,
+                        sector: viewModel.sector,
+                        routesetter: viewModel.routesetter,
+                        color: viewModel.color
+                    )
+                    Buttons_FL_Done(viewModel: viewModel)
+
                     Divider()
                         .padding(.horizontal, 30)
                         .padding(.vertical, 10)
                     
-                    SwitchableView(userID: userID, boulderID: boulderID, initialDifficulty: difficulty)
-                    
-                    ToppedByTable(boulderID: boulderID)
-                    
+                    SwitchableView(
+                        userID: viewModel.userID,
+                        boulderID: viewModel.boulderID,
+                        initialDifficulty: viewModel.difficulty)
+
+
+                    ToppedByTable(viewModel: viewModel)
+
                     Spacer()
                 }
             }
-            .onAppear {
-                Task {
-                    await loadBoulderData()
-                }
-            }
-        }
-    }
-    
-    private func loadBoulderData() async {
-        do {
-            if let boulder = try await DatabaseManager.shared.getBoulderByID(boulderID: boulderID) {
-                difficulty = boulder.diff
-                color = boulder.color
-
-                if let sectorData = try await DatabaseManager.shared.getSectorByID(sectorID: boulder.sector_id) {
-                    sector = sectorData.sector_name
-                } else {
-                    sector = "Unknown Sector"
-                }
-                
-                routesetter = "Unknown"
-            } else {
-                difficulty = "Unknown"
-                sector = "Unknown"
-                routesetter = "Unknown"
-            }
-        } catch {
-            difficulty = "Error"
-            sector = "Error"
-            routesetter = "Error"
         }
     }
 }
 
+struct Buttons_FL_Done: View {
+    @ObservedObject var viewModel: BoulderInfoModel
+
+    var body: some View {
+        VStack {
+            if viewModel.isLoading {
+                ProgressView()
+            } else {
+                HStack(spacing: 16) {
+                    GradientButton(
+                        iconName: "hand.thumbsup.fill",
+                        buttonText: "DONE",
+                        gradientStartColor: Color("Czerwony"),
+                        gradientEndColor: Color("Fioletowy"),
+                        isPressed: viewModel.isDonePressed,
+                        onTap: {
+                            viewModel.isDonePressed.toggle()
+                            viewModel.isFlashPressed = false
+                            Task {
+                                await viewModel.handleButtonStateChange()
+                            }
+                        }
+                    )
+
+                    GradientButton(
+                        iconName: "hands.clap.fill",
+                        buttonText: "FLASH",
+                        gradientStartColor: Color("Fioletowy"),
+                        gradientEndColor: Color("Czerwony"),
+                        isPressed: viewModel.isFlashPressed,
+                        onTap: {
+                            viewModel.isFlashPressed.toggle()
+                            viewModel.isDonePressed = false
+                            Task {
+                                await viewModel.handleButtonStateChange()
+                            }
+                        }
+                    )
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 10)
+            }
+        }
+    }
+}
+
+struct ToppedByTable: View {
+    @ObservedObject var viewModel: BoulderInfoModel
+
+    var body: some View {
+        VStack(alignment: .leading) {
+            Text("Topped by")
+                .font(.system(size: 20, weight: .semibold))
+                .padding(.bottom, 8)
+
+            ForEach(viewModel.toppedByData, id: \.user_id) { toppedBy in
+                HStack {
+                    // Profile Image and Name
+                    HStack {
+                        Image(uiImage: viewModel.usersData[toppedBy.user_id]?.2
+                                .flatMap { UIImage(data: $0) }
+                                ?? UIImage(systemName: "person.crop.circle.fill")!)
+                            .resizable()
+                            .frame(width: 30, height: 30)
+                            .clipShape(Circle())
+
+                        if let user = viewModel.usersData[toppedBy.user_id] {
+                            Text("\(user.0 ?? "") \(user.1 ?? "")")
+                                .font(.system(size: 14, weight: .light))
+                                .foregroundColor(.black)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }
+
+                    Spacer()
+
+                    // Flash and Date Information
+                    VStack(alignment: .trailing) {
+                        Text(toppedBy.is_flashed ? "FL" : "RP")
+                            .font(.subheadline)
+                            .foregroundColor(.black)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+
+                        if let createdAt = toppedBy.created_at {
+                            Text("\(timeAgo(from: createdAt))")
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                        }
+                    }
+                }
+                .padding(.vertical, 8)
+
+                Divider()
+                    .background(Color.gray)
+                    .frame(height: 1)
+            }
+        }
+        .padding(.horizontal, 20)
+        .cornerRadius(8)
+        .onAppear {
+            Task {
+                await viewModel.fetchToppedByData()
+            }
+        }
+    }
+}
 
 struct BoulderTopBar: View {
     var difficulty: String
     var sector: String
-    var routesetter: String? // Może być nil
+    var routesetter: String?
     var color: String
 
     var body: some View {
@@ -123,8 +204,6 @@ struct BoulderTopBar: View {
                     Text(routesetter)
                         .font(.system(size: 15, weight: .light))
                         .foregroundColor(Color.gray)
-                } else {
-                    Text("") // Puste pole w przypadku nil lub pustego tekstu
                 }
             }
         }
@@ -132,7 +211,6 @@ struct BoulderTopBar: View {
         .padding(.vertical, 10)
     }
 }
-
 
 struct GradientButton: View {
     var iconName: String
@@ -160,7 +238,7 @@ struct GradientButton: View {
                             .font(.system(size: 25))
                     )
                 )
-            
+
             Text(buttonText)
                 .font(.system(size: 25, weight: .bold))
                 .foregroundColor(.clear)
@@ -192,99 +270,6 @@ struct GradientButton: View {
     }
 }
 
-struct Buttons_FL_Done: View {
-    @State private var isDonePressed = false
-    @State private var isFlashPressed = false
-    @State private var isLoading = true
-    
-    
-    var userID: String
-    var boulderID: Int
-
-    var body: some View {
-        VStack {
-            if isLoading {
-                ProgressView()
-            } else {
-                HStack(spacing: 16) {
-                    GradientButton(
-                        iconName: "hand.thumbsup.fill",
-                        buttonText: "DONE",
-                        gradientStartColor: Color("Czerwony"),
-                        gradientEndColor: Color("Fioletowy"),
-                        isPressed: isDonePressed,
-                        onTap: {
-                            isDonePressed.toggle()
-                            isFlashPressed = false
-                            Task {
-                                await handleButtonStateChange()
-                            }
-                        }
-                    )
-
-                    GradientButton(
-                        iconName: "hands.clap.fill",
-                        buttonText: "FLASH",
-                        gradientStartColor: Color("Fioletowy"),
-                        gradientEndColor: Color("Czerwony"),
-                        isPressed: isFlashPressed,
-                        onTap: {
-                            isFlashPressed.toggle()
-                            isDonePressed = false
-                            Task {
-                                await handleButtonStateChange()
-                            }
-                        }
-                    )
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 10)
-            }
-        }
-        .onAppear {
-            Task {
-                await loadInitialState()
-            }
-        }
-    }
-
-    private func loadInitialState() async {
-        do {
-            if let toppedBy = try await DatabaseManager.shared.getToppedBy(boulderID: boulderID, userID: userID) {
-                isDonePressed = !toppedBy.is_flashed
-                isFlashPressed = toppedBy.is_flashed
-            } else {
-                isDonePressed = false
-                isFlashPressed = false
-            }
-            isLoading = false
-        } catch {
-            print("Failed to load data: \(error)")
-            isLoading = false
-        }
-    }
-
-    private func handleButtonStateChange() async {
-        do {
-            if !isDonePressed && !isFlashPressed {
-                try await DatabaseManager.shared.deleteToppedBy(boulderID: boulderID, userID: userID)
-            } else {
-                let toppedBy = ToppedBy(
-                    user_id: userID,
-                    boulder_id: boulderID,
-                    is_flashed: isFlashPressed,
-                    created_at: ISO8601DateFormatter().string(from: Date())
-                )
-                try await DatabaseManager.shared.updateToppedBy(toppedBy: toppedBy)
-            }
-        } catch {
-            print("Failed to update or delete data: \(error)")
-        }
-    }
-
-}
-
-
 struct SwitchableButton: View
 {
     var buttonText: String
@@ -307,26 +292,29 @@ struct SwitchableButton: View
     }
 }
 
-struct SwitchableView: View
-{
+struct SwitchableView: View {
     var userID: String
     var boulderID: Int
     var initialDifficulty: String
     
     @State private var selectedTab: Tab = .gradeRating
+    @StateObject private var boulderInfoModel: BoulderInfoModel
     
-    enum Tab
-    {
+    enum Tab {
         case gradeRating
         case starRating
     }
     
-    var body: some View
-    {
-        VStack
-        {
-            HStack(spacing: -20)
-            {
+    init(userID: String, boulderID: Int, initialDifficulty: String) {
+        self.userID = userID
+        self.boulderID = boulderID
+        self.initialDifficulty = initialDifficulty
+        _boulderInfoModel = StateObject(wrappedValue: BoulderInfoModel(boulderID: boulderID, userID: userID))
+    }
+
+    var body: some View {
+        VStack {
+            HStack(spacing: -20) {
                 SwitchableButton(
                     buttonText: "GRADE RATING",
                     isSelected: selectedTab == .gradeRating,
@@ -345,13 +333,20 @@ struct SwitchableView: View
             }
             .padding(.horizontal)
             
-            if selectedTab == .gradeRating
-            {
-                VotesAndSliderView(userId: userID, boulderId: boulderID, initialDifficulty: initialDifficulty)
-                
-            } else if selectedTab == .starRating
-            {
+            if selectedTab == .gradeRating {
+                VotesAndSliderView(
+                    userId: userID,
+                    boulderId: boulderID,
+                    initialDifficulty: boulderInfoModel.difficulty,
+                    votesData: boulderInfoModel.votesData
+                )
+            } else if selectedTab == .starRating {
                 RatingSummaryAndRatingView(userId: userID, boulderId: boulderID)
+            }
+        }
+        .onAppear {
+            Task {
+                await boulderInfoModel.loadBoulderData()
             }
         }
     }
@@ -361,70 +356,90 @@ struct VotesAndSliderView: View {
     var userId: String
     var boulderId: Int
     var initialDifficulty: String
+    var votesData: [DatabaseManager.AllGradeGroupedVotes]
     
     @State private var sliderValue: Double = 0
     @State private var isChanged: Bool = false
+    @State private var isInitialDifficultyLoaded: Bool = false  // Track if initial difficulty is loaded
     
     var body: some View {
         VStack(spacing: 0) {
-            VotesBarChart(boulderID: 6, BoulderGrade: "5B")
-
+            // Vote Chart, you can change this based on how you want to display votes
+            VotesBarChart(votesData: votesData)
+            
             Divider()
                 .padding(.vertical, 20)
 
-            // Slider for difficulty
-            BoulderDifficultySlider(
-                initialDifficulty: initialDifficulty,
-                sliderValue: $sliderValue,
-                difficulties: getDifficultiesSubset()
-            )
-            .onAppear {
-                Task {
-                    await fetchUserVote()
-                }
-            }
-
-            HStack {
-                Spacer()
-                Button(action: {
+            if isInitialDifficultyLoaded {
+                BoulderDifficultySlider(
+                    initialDifficulty: initialDifficulty,
+                    sliderValue: $sliderValue,
+                    difficulties: getDifficultiesSubset()
+                )
+                .onAppear {
                     Task {
-                        await saveOrUpdateVote()
+                        await fetchUserVote()
                     }
-                }) {
-                    Text(isChanged ? "CHANGE" : "SAVE")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(Color("Fioletowy"))
                 }
-                .padding(.trailing, 30)
-                .padding(.bottom, 20)
+                
+                HStack {
+                    Spacer()
+                    Button(action: {
+                        Task {
+                            await saveOrUpdateVote()
+                        }
+                    }) {
+                        Text(isChanged ? "CHANGE" : "SAVE")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(Color("Fioletowy"))
+                    }
+                    .padding(.trailing, 30)
+                    .padding(.bottom, 20)
+                }
+                .frame(maxWidth: .infinity, alignment: .trailing)
+            } else {
+                Text("Loading difficulty...")
+                    .font(.system(size: 17, weight: .semibold))
+                    .padding()
             }
-            .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .background(Color(UIColor.systemGray6))
         .cornerRadius(12)
         .padding([.leading, .top, .trailing], 16)
         .padding(.bottom, 20)
+        .onAppear {
+            Task {
+                await fetchUserVote()
+            }
+        }
     }
     
     func fetchUserVote() async {
         do {
+            let difficulties = getDifficultiesSubset()
+
             if let fetchedVote = try await DatabaseManager.shared.getGradeVote(boulderID: boulderId, userID: userId) {
-                if let index = allDifficulties.firstIndex(of: fetchedVote.grade_vote) {
+                if let index = difficulties.firstIndex(of: fetchedVote.grade_vote) {
                     sliderValue = Double(index)
+                } else {
+                    //print("fetched vote is not in the difficulties")
                 }
                 isChanged = true
-
             } else {
-                if let index = allDifficulties.firstIndex(of: initialDifficulty) {
+                if let index = difficulties.firstIndex(of: initialDifficulty) {
                     sliderValue = Double(index)
+                } else {
+                    //print("initialDifficulty is not found in the difficulties list")
                 }
+
                 isChanged = false
             }
+            
+            isInitialDifficultyLoaded = true
         } catch {
-            print("Error fetching vote: \(error)")
+            print("Error fetching vote")
         }
     }
-
     
     func saveOrUpdateVote() async {
         let selectedDifficulty = getCurrentDifficulty()
@@ -448,7 +463,6 @@ struct VotesAndSliderView: View {
         }
     }
 
-
     private func getCurrentDifficulty() -> String {
         let currentIndex = Int(sliderValue)
         let difficultiesSubset = getDifficultiesSubset()
@@ -463,6 +477,7 @@ struct VotesAndSliderView: View {
         return Array(allDifficulties[lowerBound...upperBound])
     }
 }
+
 
 
 
@@ -527,103 +542,74 @@ struct BoulderDifficultySlider: View {
 }
 
 
-
 struct VotesBarChart: View {
-    @State private var votesData: [DatabaseManager.AllGradeGroupedVotes] = []
-    @State private var maxVoteCount: Int = 1
-    @State private var isLoading = true
-    @State private var errorMessage: String?
+    let votesData: [DatabaseManager.AllGradeGroupedVotes]
 
-    let boulderID: Int
-    let BoulderGrade: String
+    private var maxVoteCount: Int {
+        votesData.map { $0.votes }.max() ?? 1
+    }
 
     var body: some View {
         VStack(alignment: .leading) {
-            if isLoading {
-                ProgressView("Loading votes...")
-            } else if let errorMessage = errorMessage {
-                Text("Error: \(errorMessage)")
-                    .foregroundColor(.red)
-            } else {
-                VStack(alignment: .leading) {
-                    Text("Community grade votes")
-                        .font(.system(size: 20, weight: .semibold))
-                        .padding(.top, 30)
-                        .padding(.leading, 12)
-                    
-                    Text("\(totalVotes) votes in total")
-                        .font(.system(size: 13, weight: .light))
-                        .foregroundColor(.gray)
-                        .padding(.leading, 12)
-                }
+            Text("Community grade votes")
+                .font(.system(size: 20, weight: .semibold))
+                .padding(.top, 30)
+                .padding(.leading, 12)
 
-                HStack(alignment: .bottom, spacing: 15) {
-                    ForEach(votesData) { vote in
+            Text("\(totalVotes) votes in total")
+                .font(.system(size: 13, weight: .light))
+                .foregroundColor(.gray)
+                .padding(.leading, 12)
+
+            HStack(alignment: .bottom, spacing: 15) {
+                ForEach(votesData) { vote in
+                    VStack {
+                        ZStack(alignment: .bottom) {
+                            // Background bar (gray)
+                            Capsule()
+                                .fill(Color.gray.opacity(0.2))
+                                .frame(width: 12, height: 110)
+
+                            // Gradient filled bar based on the number of votes
+                            Capsule()
+                                .fill(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [Color("Czerwony"), Color("Fioletowy")]),
+                                        startPoint: .bottom,
+                                        endPoint: .top
+                                    )
+                                )
+                                .frame(
+                                    width: 12,
+                                    height: CGFloat(vote.votes) / CGFloat(maxVoteCount) * 110
+                                )
+                                .shadow(radius: 2)
+                        }
+
+                        // Difficulty label with vote count at the top
                         VStack {
-                            ZStack(alignment: .bottom) {
-                                Capsule()
-                                    .fill(Color.gray.opacity(0.2))
-                                    .frame(width: 10, height: 110)
-
-                                Capsule()
-                                    .fill(
-                                        LinearGradient(
-                                            gradient: Gradient(colors: [Color("Czerwony"), Color("Fioletowy")]),
-                                            startPoint: .bottom,
-                                            endPoint: .top
-                                        )
-                                    )
-                                    .frame(
-                                        width: 10,
-                                        height: CGFloat(vote.votes) / CGFloat(maxVoteCount) * 110
-                                    )
-                            }
                             Text(vote.difficulty)
                                 .font(.system(size: 13))
                                 .foregroundColor(.primary)
                                 .lineLimit(1)
-                                .padding(.top, 4)
                         }
+                        .padding(.top, 4)
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
             }
-        }
-        .onAppear {
-            Task {
-                await loadVotes()
-            }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
         }
     }
-    
+
     private var totalVotes: Int {
         votesData.reduce(0) { $0 + $1.votes }
     }
-
-    private func loadVotes() async {
-        do {
-            let votes = try await DatabaseManager.shared.fetchGroupedGradeVotes(boulderID: boulderID, boulderDifficulty: BoulderGrade)
-            DispatchQueue.main.async {
-                self.votesData = votes
-                self.maxVoteCount = votes.map { $0.votes }.max() ?? 1
-                self.isLoading = false
-            }
-        } catch {
-            DispatchQueue.main.async {
-                self.errorMessage = error.localizedDescription
-                self.isLoading = false
-            }
-        }
-    }
 }
-
-
 
 struct RatingSummaryView: View {
     @State private var ratings: [StarVote] = []
     @State private var isLoading = true
-    
     let boulderID: Int
     
     var averageRating: Double {
@@ -759,9 +745,6 @@ struct RatingView: View {
     }
 }
 
-
-
-
 struct RatingSummaryAndRatingView: View {
     var userId: String
     var boulderId: Int
@@ -769,7 +752,14 @@ struct RatingSummaryAndRatingView: View {
     @State private var selectedRating: Int = 5
     @State private var isChanged: Bool = false
     @State private var starVote: StarVote? = nil
-
+    @StateObject private var boulderInfoModel: BoulderInfoModel
+    
+    init(userId: String, boulderId: Int) {
+        self.userId = userId
+        self.boulderId = boulderId
+        _boulderInfoModel = StateObject(wrappedValue: BoulderInfoModel(boulderID: boulderId, userID: userId))
+    }
+    
     func fetchStarVote() async {
         do {
             if let fetchedVote = try await DatabaseManager.shared.getStarVote(boulderID: boulderId, userID: userId) {
@@ -784,9 +774,7 @@ struct RatingSummaryAndRatingView: View {
             print("Error fetching star vote: \(error)")
         }
     }
-
-
-
+    
     func saveOrUpdateVote() async {
         let newStarVote = StarVote(
             user_id: userId,
@@ -794,7 +782,7 @@ struct RatingSummaryAndRatingView: View {
             created_at: ISO8601DateFormatter().string(from: Date()),
             star_vote: selectedRating
         )
-
+        
         do {
             try await DatabaseManager.shared.updateStarVote(starVote: newStarVote)
             if isChanged {
@@ -802,24 +790,25 @@ struct RatingSummaryAndRatingView: View {
             } else {
                 print("Created new star vote")
             }
-
+            
             isChanged = true
         } catch {
             print("Error saving or updating star vote: \(error)")
         }
     }
-
+    
     var body: some View {
         VStack(spacing: 0) {
+            
             RatingSummaryView(boulderID: boulderId)
-
+            
             RatingView(selectedRating: $selectedRating)
                 .onAppear {
                     Task {
                         await fetchStarVote()
                     }
                 }
-
+            
             HStack {
                 Spacer()
                 Button(action: {
@@ -842,106 +831,9 @@ struct RatingSummaryAndRatingView: View {
     }
 }
 
-
-
-struct ToppedByTable: View {
-    var boulderID: Int
-    
-    @State private var toppedByData: [ToppedBy] = []
-    @State private var usersData: [String: (String?, String?, Data?)] = [:]
-    
-    var body: some View {
-        VStack(alignment: .leading) {
-            Text("Topped by")
-                .font(.system(size: 20, weight: .semibold))
-                .padding(.bottom, 8)
-            
-            ForEach(toppedByData, id: \.user_id) { toppedBy in
-                HStack {
-                    HStack {
-                        Image(uiImage: usersData[toppedBy.user_id]?.2.flatMap { UIImage(data: $0) } ?? UIImage(systemName: "person.crop.circle.fill")!)
-                            .resizable()
-                            .frame(width: 30, height: 30)
-                            .clipShape(Circle())
-
-                        
-                        if let user = usersData[toppedBy.user_id] {
-                            Text("\(user.0 ?? "") \(user.1 ?? "")")
-                                .font(.system(size: 14, weight: .light))
-                                .foregroundColor(.black)
-                                .lineLimit(1)
-                                .truncationMode(.tail)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                    }
-                    
-                    Spacer()
-
-                    VStack(alignment: .trailing) {
-                        Text(toppedBy.is_flashed ? "FL" : "RP")
-                            .font(.subheadline)
-                            .foregroundColor(.black)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                        
-                        if let createdAt = toppedBy.created_at {
-                            Text("\(timeAgo(from: createdAt))") // Używamy nowej funkcji
-                                .font(.subheadline)
-                                .foregroundColor(.gray)
-                                .lineLimit(1)
-                                .truncationMode(.tail)
-                        }
-                    }
-                }
-                .padding(.vertical, 8)
-                
-                Divider()
-                    .background(Color.gray)
-                    .frame(height: 1)
-            }
-        }
-        .padding(.horizontal, 20)
-        .cornerRadius(8)
-        .onAppear {
-            Task {
-                await fetchToppedByData()
-            }
-        }
-    }
-
-    private func fetchToppedByData() async {
-        do {
-            let fetchedData = try await DatabaseManager.shared.getBoulderToppedBy(boulderID: boulderID)
-            toppedByData = fetchedData
-            
-            await fetchUsersData(for: fetchedData)
-        } catch {
-            print("Error fetching ToppedBy data: \(error)")
-        }
-    }
-
-    private func fetchUsersData(for toppedByData: [ToppedBy]) async {
-        let userIds = Set(toppedByData.map { $0.user_id })
-        
-        for userId in userIds {
-            do {
-                if let user = try await DatabaseManager.shared.getUser(userID: userId) {
-                    let profilePictureData = try? await StorageManager.shared.fetchUserProfilePicture(user_uid: user.uid.uuidString)
-                    usersData[userId] = (user.name, user.surname, profilePictureData)
-                }
-            } catch {
-                print("Error fetching user data for userId: \(userId), \(error)")
-            }
-        }
-    }
-
-}
-
-
-struct BoulderInfo_Previews: PreviewProvider
-{
-    static var previews: some View
-    {
-        BoulderInfo(boulderID: 6)
+struct BoulderInfo_Previews: PreviewProvider {
+    static var previews: some View {
+        BoulderInfoView(viewModel: BoulderInfoModel(boulderID: 6))
     }
 }
+

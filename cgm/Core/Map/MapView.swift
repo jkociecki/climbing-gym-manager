@@ -61,8 +61,9 @@ struct MapView: View {
             }
         }
         .sheet(item: $selectedBoulder) { boulderId in
-            BoulderInfo(boulderID: boulderId)
+            BoulderInfoView(viewModel: BoulderInfoModel(boulderID: boulderId))
         }
+
     }
     
     private var bouldersOverlay: some View {
