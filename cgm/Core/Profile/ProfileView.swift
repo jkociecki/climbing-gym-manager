@@ -304,7 +304,7 @@ struct TopTenBoulders: View {
                     HStack {
                         Text("\(index + 1)")
                             .font(.system(size: 20, weight: .semibold))
-                            .frame(width: 18, alignment: .leading)
+                            .frame(width: 25, alignment: .leading)
                         Circle()
                             .fill(Color(hex: boulder.color))
                             .frame(width: 25, height: 25)

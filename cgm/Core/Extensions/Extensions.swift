@@ -55,13 +55,22 @@ func timeAgo(from dateString: String) -> String {
 }
 
 func formattedDate(_ date: String, dateFormat: String) -> String {
-    if let dateObject = customFormatter.date(from: date) {
+    let isoFormatter = ISO8601DateFormatter()
+    isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    if let dateObject = isoFormatter.date(from: date) {
         return formatDateObject(dateObject, dateFormat: dateFormat)
     }
-    
     print("Nie udało się sformatować daty: \(date)")
     return date
 }
+
+func formattedDate(_ date: Date, dateFormat: String) -> String {
+    let displayFormatter = DateFormatter()
+    displayFormatter.dateFormat = dateFormat
+    displayFormatter.locale = Locale(identifier: "en_US_POSIX")
+    return displayFormatter.string(from: date)
+}
+
 
 func formatDateObject(_ date: Date, dateFormat: String) -> String {
     let displayFormatter = DateFormatter()
@@ -77,6 +86,23 @@ func formatDate(_ date: Date) -> String {
     return displayFormatter.string(from: date)
 }
 
+
+func formatDate2(_ dateString: String) -> String {
+    let dateFormatter = DateFormatter()
+    dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZZZZZ"
+    dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+    
+    if let date = dateFormatter.date(from: dateString) {
+        // Zwracamy datę w formacie "d MMM yyyy"
+        let displayFormatter = DateFormatter()
+        displayFormatter.dateFormat = "d MMM yyyy"
+        displayFormatter.locale = Locale(identifier: "en_US_POSIX")
+        return displayFormatter.string(from: date)
+    } else {
+        print("Nie udało się sformatować daty: \(dateString)")
+        return dateString
+    }
+}
 
 
 

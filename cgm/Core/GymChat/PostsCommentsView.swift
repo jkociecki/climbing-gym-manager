@@ -130,7 +130,7 @@ struct CommentView: View {
     var image: UIImage
     var nickname: String
     var content: String
-    var timestamp: Date // timestamp is now a Date
+    var timestamp: Date
 
     var body: some View {
         HStack(alignment: .top, spacing: 1) {

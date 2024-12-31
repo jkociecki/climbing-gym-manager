@@ -39,7 +39,6 @@ struct LineChartView: View {
                 chartData.append(ChartData(month: month, difficulty: Double(points)))
             }
             
-            
             DispatchQueue.main.async {
                 self.data = chartData
             }
@@ -47,7 +46,6 @@ struct LineChartView: View {
             print("Error fetching bouldering data: \(error)")
         }
     }
-
 
     func extractMonth(from createdAt: String?) -> String? {
         guard let createdAt = createdAt else { return nil }
@@ -84,13 +82,11 @@ struct LineChartView: View {
     }
 
     var minY: Double {
-        let minValue = data.map { $0.difficulty }.min() ?? 0
-        return minValue - (minValue * 0.05)
+        return 0 // Ustalamy 0 jako minimalną wartość na osi Y
     }
     
     var maxY: Double {
-        let maxValue = data.map { $0.difficulty }.max() ?? 0
-        return maxValue + (maxValue * 0.05)
+        return (data.map { $0.difficulty }.max() ?? 0) * 1.05 // Najwyższa wartość powiększona o 5% dla lepszego widoku
     }
     
     var body: some View {
@@ -120,7 +116,7 @@ struct LineChartView: View {
                 }
             }
             .chartYAxis {
-                AxisMarks(values: Array(stride(from: minY, through: maxY, by: 50))) { value in
+                AxisMarks(values: [minY, maxY]) { value in
                     AxisValueLabel {
                         Text("\(value.as(Double.self) ?? 0, specifier: "%0.f")") // Wyświetlanie punktów
                     }
@@ -154,8 +150,13 @@ import SwiftUI
 import Charts
 
 
+struct DifficultyData {
+    var difficulty: String
+    var done: Int
+}
+
 struct BarChartView: View {
-    @State private var difficultyData: [String: Int] = [:]  // Store difficulty data
+    @State private var difficultyData: [DifficultyData] = []  // Store difficulty data
     
     // Sample userID for the sake of the example
     let userID: String = "08BBCE85-0A59-4500-821D-0A235C7C5AEA"
@@ -173,10 +174,10 @@ struct BarChartView: View {
                         .foregroundColor(.gray)
                 } else {
                     // Chart with actual data
-                    Chart(difficultyData.keys.sorted(), id: \.self) { key in
+                    Chart(difficultyData.map { $0.difficulty }, id: \.self) { key in
                         BarMark(
                             x: .value("Grade", key),
-                            y: .value("Count", difficultyData[key] ?? 0),
+                            y: .value("Count", difficultyData.first { $0.difficulty == key }?.done ?? 0),
                             width: 25
                         )
                         .cornerRadius(15)
@@ -210,7 +211,7 @@ struct BarChartView: View {
         }
     }
     
-    func generateBoulderingDifficultyData(forUserID userID: String) async throws -> [String: Int] {
+    func generateBoulderingDifficultyData(forUserID userID: String) async throws -> [DifficultyData] {
         let toppedBoulders: [ToppedBy] = try await DatabaseManager.shared.getToppedBoulders(forUserID: userID)
         
         let allBoulders: [BoulderD] = try await DatabaseManager.shared.getCurrentGymBoulders()
@@ -222,35 +223,36 @@ struct BarChartView: View {
         
         var difficultyCount: [String: Int] = [:]
         
+        // Liczymy wystąpienia trudności
         for toppedBoulder in toppedBoulders {
             if let difficulty = boulderDifficultyMap[toppedBoulder.boulder_id] {
                 difficultyCount[difficulty, default: 0] += 1
             }
         }
         
-
         let completedDifficulties = difficultyCount.keys.sorted { difficultyIndex($0) < difficultyIndex($1) }
         let highestDifficulty = completedDifficulties.last ?? ""
         
-        var extendedDifficultyCount: [String: Int] = difficultyCount
-        
+        var difficultyData: [DifficultyData] = []
+
         var currentDifficultyIndex = difficultyIndex(highestDifficulty)
         
-        for _ in 1...5 {
-            currentDifficultyIndex -= 1
+        for _ in 0..<6 {
             if currentDifficultyIndex >= 0 {
                 let lowerDifficulty = allDifficulties[currentDifficultyIndex]
-                extendedDifficultyCount[lowerDifficulty, default: 0] = 0
+                difficultyData.append(DifficultyData(difficulty: lowerDifficulty, done: difficultyCount[lowerDifficulty, default: 0]))
+                currentDifficultyIndex -= 1
             }
         }
         
-        return extendedDifficultyCount
+        return difficultyData.reversed()
     }
 
     private func difficultyIndex(_ difficulty: String) -> Int {
         return allDifficulties.firstIndex(of: difficulty) ?? -1
     }
 }
+
 
 struct BarChartView_Previews: PreviewProvider {
     static var previews: some View {
