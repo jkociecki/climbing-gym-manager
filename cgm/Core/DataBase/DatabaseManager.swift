@@ -356,6 +356,8 @@ class DatabaseManager {
             .value
         return data.first
     }
+    
+    
     func getToppedBoulders(forUserID userID: String) async throws -> [ToppedBy] {
         let toppedBoulders = try await client
             .from("ToppedBy")
@@ -365,6 +367,8 @@ class DatabaseManager {
         
         return toppedBoulders
     }
+    
+    
     func getUserStats(userID: String) async throws -> (flashes: Int, tops: Int) {
         let data: [ToppedBy] = try await client
             .from("ToppedBy")

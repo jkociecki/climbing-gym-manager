@@ -83,13 +83,12 @@ struct TopBar: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                // Left Button
                 config.leftButton.buttonView()
                     .padding(.leading)
                 
                 Spacer()
                 
-                // Title
+
                 Text(config.title)
                     .font(.headline)
                     .foregroundColor(.white)
@@ -104,9 +103,10 @@ struct TopBar: View {
                         .frame(width: 44)
                 }
             }
-            .frame(height: 60)
+            .frame(height: 80)
+            .padding(.vertical, 30)
             
-            // Additional Content (if exists)
+
             if let additionalContent = config.additionalContent {
                 additionalContent
             }
@@ -144,4 +144,8 @@ struct ProfileTopBarContent: View {
         }
         .padding(.vertical, 8)
     }
+}
+
+#Preview{
+    MainView()
 }

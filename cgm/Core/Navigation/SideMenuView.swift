@@ -75,8 +75,7 @@ struct SideMenuView: View {
                     VStack(alignment: .leading, spacing: 15) {
                         MenuGroup(title: "MAIN MENU")
                             {
-                            MenuItem(icon: "house.fill", title: "Home", selectedView: $selectedView)
-                            MenuItem(icon: "person.fill", title: "Profile", selectedView: $selectedView)
+                            MenuItem(icon: "person.fill", title: "Profile Settings", selectedView: $selectedView)
                             MenuItem(icon: "doc.text.fill", title: "Your Posts", selectedView: $selectedView)
                         }
                         
@@ -85,8 +84,7 @@ struct SideMenuView: View {
                         
                         MenuGroup(title: "GYM") {
                             MenuItem(icon: "info.circle.fill", title: "About Gym", selectedView: $selectedView)
-                            MenuItem(icon: "map.fill", title: "Groto", selectedView: $selectedView)
-                            MenuItem(icon: "heart.fill", title: "Favourites", selectedView: $selectedView)
+                            MenuItem(icon: "map.fill", title: "Switch Gym", selectedView: $selectedView)
                         }
                         
                         Divider()

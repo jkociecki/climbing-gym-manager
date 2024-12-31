@@ -13,15 +13,17 @@ let colors = [
     "2DFFDD", "FF1493", "FF4500", "6A0DAD"
 ]
 
-let sectors = ["Połóg", "Wu", "Diament", "Kaskady", "Piony", "Beczka",
-"Prawe Zacięcie", "Mały Sześciokąt", "Duży Sześciokąt", "Lewa Grota",
-"Prawa Grota", "Lewa Grota", "Tył Wieży"]
+//let sectors = ["Połóg", "Wu", "Diament", "Kaskady", "Piony", "Beczka",
+//"Prawe Zacięcie", "Mały Sześciokąt", "Duży Sześciokąt", "Lewa Grota",
+//"Prawa Grota", "Lewa Grota", "Tył Wieży"]
 
 
 struct MapFiltersView: View {
-    @State private var selectedRange: ClosedRange<Int> = 0...allDifficulties.count - 1
-    @State private var selectedColors: Set<String> = []
-    @State var selectedSectors: Set<String> = []
+    @State private var selectedRange:       ClosedRange<Int> = 0...allDifficulties.count - 1
+    @State private var selectedColors:      Set<String> = []
+    @State var selectedSectors:             Set<String> = []
+    @ObservedObject var mapViewModel:       MapViewModel
+    
     var sectors: [String]
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 8)
 
@@ -94,11 +96,50 @@ struct MapFiltersView: View {
                 }
                 .padding(.vertical, 10)
                 .padding(.horizontal, 10)
+                .background(RoundedRectangle(cornerRadius: 15).foregroundStyle(Color(hex: "F4F4F4")).padding(.horizontal, 5))
                 
                 Divider()
                     .padding(.vertical, 10)
                 
-                SectorsGrid(selectedSectors: selectedSectors, sectors: sectors)
+                SectorsGrid(selectedSectors: $selectedSectors, sectors: sectors)  // Dodaj $ przed selectedSectors
+                    .padding(.vertical, 10)
+
+                Button {
+                    mapViewModel.applyFilters(difficulties: selectedRange, colors: selectedColors, sectors: selectedSectors)
+                } label: {
+                    Text("Apply")
+                        .foregroundStyle(.white)
+                        .font(.custom("Inter18pt-SemiBold", size: 16))
+                        .padding(10)
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            RoundedRectangle(cornerRadius: 15)
+                                .fill(.fioletowy)
+                                .stroke(.fioletowy, lineWidth: 2)
+                        )
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 20)
+                
+                Button {
+                    mapViewModel.resetFilters()
+                } label: {
+                    Text("Reset")
+                        .foregroundStyle(.white)
+                        .font(.custom("Inter18pt-SemiBold", size: 16))
+                        .padding(10)
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            RoundedRectangle(cornerRadius: 15)
+                                .fill(.fioletowy)
+                                .stroke(.fioletowy, lineWidth: 2)
+                        )
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 20)
+
+
+               
 
             }
         }
@@ -114,7 +155,7 @@ struct MapFiltersView: View {
 }
 
 struct SectorsGrid: View {
-    @State var selectedSectors: Set<String>
+    @Binding var selectedSectors: Set<String>
     var sectors: [String]
 
     var body: some View {
@@ -138,7 +179,7 @@ struct SectorsGrid: View {
                                     .font(.custom("Inter18pt-Light", size: 12))
                                     .padding(.vertical, 8)
                                     .padding(.horizontal, 10)
-                                    .frame(maxWidth: .infinity) // Dopasowanie szerokości
+                                    .frame(maxWidth: .infinity)
                                     .background(selectedSectors.contains(sector) ? Color.purple.opacity(0.2) : Color.clear)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 8)
@@ -157,8 +198,8 @@ struct SectorsGrid: View {
     }
 
     private func calculateColumns(for width: CGFloat) -> [GridItem] {
-        let itemWidth: CGFloat = 100 // Szerokość pojedynczego przycisku
-        let spacing: CGFloat = 10 // Odstęp między elementami
+        let itemWidth: CGFloat = 100
+        let spacing: CGFloat = 10
         let numberOfColumns = max(Int((width + spacing) / (itemWidth + spacing)), 1)
         return Array(repeating: GridItem(.flexible(), spacing: spacing), count: numberOfColumns)
     }
@@ -174,11 +215,11 @@ struct SectorsGrid: View {
 
 struct SlidingFilterPanel: View {
     @Binding var isShowing: Bool
+    @ObservedObject var mapViewModel: MapViewModel
     
     var body: some View {
         GeometryReader { geometry in
             ZStack(alignment: .trailing) {
-                // Semi-transparent background
                 if isShowing {
                     Color.black
                         .opacity(0.5)
@@ -208,7 +249,7 @@ struct SlidingFilterPanel: View {
                             .padding()
                         }
                         
-                        MapFiltersView(sectors: sectors)
+                        MapFiltersView(mapViewModel: mapViewModel, sectors: mapSectorNames())
                     }
                     .frame(width: min(geometry.size.width * 0.85, 380))
                     .background(.white)
@@ -217,8 +258,9 @@ struct SlidingFilterPanel: View {
             }
         }
     }
+    
+    private func mapSectorNames() -> [String] {
+        return mapViewModel.gymSectors.map { $0.id }
+    }
 }
 
-#Preview {
-    MapFiltersView(sectors: sectors)
-}

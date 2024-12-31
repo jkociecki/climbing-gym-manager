@@ -2,33 +2,40 @@ import SwiftUI
 
 
 struct MainView: View {
-    @State private var selectedTab: String = "housee"
-    @State private var showSideMenu: Bool = false
-    @State private var selectedView: String = "Home"
-    @State private var showFilterPanel: Bool = false
-
+    @State private var selectedTab:         String = "housee"
+    @State private var showSideMenu:        Bool = false
+    @State private var selectedView:        String = "Home"
+    @State private var showFilterPanel:     Bool = false
+    
+    @StateObject private var mapViewModel: MapViewModel = MapViewModel()
+    
     
     var body: some View {
-            ZStack(alignment: .bottom) {
-                // Main Content Stack
-                VStack {
-                    TopBar(config: getTopBarConfig())
+            ZStack{
+
+                TopBar(config: getTopBarConfig())
                         .zIndex(1)
                         .offset(x: showSideMenu ? UIScreen.main.bounds.width * 0.8 : 0)
+                        .ignoresSafeArea()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                        .padding(.top, -5)
+                        
+                                        
+                TabView(selectedTab: $selectedTab, selectedView: $selectedView, mapViewModel: mapViewModel)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .ignoresSafeArea()
+                    .zIndex(0)
+
                     
-                    TabView(selectedTab: $selectedTab, selectedView: $selectedView)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
-                
-                // Custom Tab Bar
                 CustomTabBar(selectedTab: $selectedTab, onTabSelected: { tab in
                     selectedTab = tab
                     selectedView = getDefaultViewForTab(tab)
                 })
                 .offset(x: showSideMenu ? UIScreen.main.bounds.width * 0.8 : 0)
+                .background(Color.black.opacity(0.8)) // Tło dla TabBar
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                 .padding(.bottom, -40)
                 
-                // Side Menu Overlay
                 if showSideMenu {
                     Color.black
                         .opacity(0.5)
@@ -40,17 +47,17 @@ struct MainView: View {
                         }
                 }
                 
-                // Side Menu
                 SideMenuView(showSideMenu: $showSideMenu, selectedView: $selectedView)
                     .zIndex(1)
                 
-                // Filter Panel
-                SlidingFilterPanel(isShowing: $showFilterPanel)
+                SlidingFilterPanel(isShowing: $showFilterPanel, mapViewModel: mapViewModel)
                     .zIndex(2)
             }
             .ignoresSafeArea(.keyboard, edges: .bottom)
             .animation(.easeInOut(duration: 0.3), value: showSideMenu)
+        
         }
+    
     private func getTopBarConfig() -> TopBarConfig {
         switch selectedView {
         case "Home":
@@ -70,8 +77,7 @@ struct MainView: View {
                 leftButton: .menuButton(showSideMenu: $showSideMenu),
                 rightButton: .custom(icon: "gear") {
                     print("Settings tapped")
-                },
-                additionalContent: AnyView(ProfileTopBarContent())
+                }
             )
             
         case "About Gym":
@@ -92,11 +98,11 @@ struct MainView: View {
     
     private func getDefaultViewForTab(_ tab: String) -> String {
         switch tab {
-        case "house": return "Home"
-        case "chart.bar": return "Statistics"
-        case "person": return "Profile"
-        case "plus": return "Add New"
-        default: return "Home"
+        case "house":       return "Home"
+        case "chart.bar":   return "Statistics"
+        case "person":      return "Profile"
+        case "plus":        return "Add New"
+        default:            return "Home"
         }
     }
     
@@ -106,44 +112,45 @@ struct MainView: View {
 struct TabView: View {
     @Binding var selectedTab: String
     @Binding var selectedView: String
+    @ObservedObject var mapViewModel: MapViewModel
     
     var body: some View {
         ZStack {
             if isTabBarSelection {
                 switch selectedTab {
                 case "house":
-                    MapView()
+                    MapView(mapViewModel: mapViewModel)
+                        .onAppear {
+                            mapViewModel.fetchData()
+                        }
                 case "chart.bar":
                     RankingView()
+                        .padding(.top, 100)
                 case "person":
                     ProfileView()
                 case "plus":
                     GymChatView()
+                        .padding(.top, 100)
                 default:
-                    ProfileView()
+                    MapView(mapViewModel: mapViewModel)
                 }
             }
             else {
                 switch selectedView {
-                case "Home":
-                    HomeView()
-                        .padding(.bottom, 90)
-                case "Profile":
+                case "Profile Settings":
                     SetUpAccountView()
-                case "Statistics":
-                    HomeView()
-                        .padding(.bottom, 90)
+                case "Your Posts":
+                    AddNewView()
                 case "About Gym":
                     HomeView()
-                        .padding(.bottom, 90)
-                case "Your Posts":
-                    HomeView()
-                        .padding(.bottom, 90)
-                case "Favourites":
+                case "Switch Gym":
                     SelectGymView()
+                 case "Settings":
+                    AddNewView()
+                case "Logout":
+                    AddNewView()
                 default:
                     HomeView()
-                        .padding(.bottom, 90)
                 }
             }
         }
@@ -155,11 +162,11 @@ struct TabView: View {
     
     private func getDefaultViewForTab(_ tab: String) -> String {
         switch tab {
-        case "house": return "Home"
-        case "chart.bar": return "Statistics"
-        case "person": return "Profile"
-        case "plus": return "Add New"
-        default: return "Home"
+        case "house":           return "Home"
+        case "chart.bar":       return "Statistics"
+        case "person":          return "Profile"
+        case "plus":            return "Add New"
+        default:                return "Home"
         }
     }
 }
@@ -183,7 +190,6 @@ struct HomeView: View {
             Text("Welcome to your climbing app!")
                 .foregroundColor(.gray)
             
-            // Przykładowa zawartość
             List {
                 ForEach(1...15, id: \.self) { item in
                     HStack {

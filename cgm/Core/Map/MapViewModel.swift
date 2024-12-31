@@ -18,9 +18,11 @@ enum FlashDoneNone{
 
 class MapViewModel: ObservableObject{
     @Published var map:                 String = ""
+    @Published var selectedSectorIndex: Int?
     @Published var boulders:            [Boulder] = []
     @Published var gymSectors:          [Sector] = []
-    @Published var selectedSectorIndex: Int?
+    @Published var originalBoulders:    [Boulder] = []
+
 
     
     init() {
@@ -32,7 +34,7 @@ class MapViewModel: ObservableObject{
         selectedSectorIndex = index
     }
     
-    private func fetchData() {
+    func fetchData() {
         Task {
             do {
                 let mapResponse:        String = try await DatabaseManager.shared.getCurrentGymMap()
@@ -61,8 +63,8 @@ class MapViewModel: ObservableObject{
                                        isDone:      FlashDoneNone.NotDone)
                     }
                 }
+                self.originalBoulders = self.boulders
                 try await getToppedBoulders()
-                //print(boulders)
             } catch {
             }
         }
@@ -79,6 +81,26 @@ class MapViewModel: ObservableObject{
             }
         }
         
+    }
+    
+    func applyFilters(difficulties: ClosedRange<Int>, colors: Set<String>, sectors: Set<String>) {
+        boulders = originalBoulders.filter { boulder in
+            let mappedDifficulty = mapDifficultyToNumber(diff: boulder.difficulty)
+            print("Mapped Diff: \(mappedDifficulty) diff \(boulder.difficulty)")
+            print("Sector: \(boulder.sector) diff \(sectors.first)")
+            print("Color: \(boulder.color.toHex()) diff \(boulder.difficulty)")
+            print(colors)
+            print(sectors)
+            
+            let difficultyMatch: Bool = difficulties.contains(mappedDifficulty)
+            let colorMatch: Bool = colors.isEmpty ? true : colors.contains(boulder.color.toHex())
+            let sectorMatch: Bool = sectors.isEmpty ? true : sectors.contains(boulder.sector)
+            return difficultyMatch  && sectorMatch && colorMatch
+        }
+    }
+    
+    func resetFilters() {
+        boulders = originalBoulders
     }
 }
 

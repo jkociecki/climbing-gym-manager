@@ -1,22 +1,23 @@
 import SwiftUI
 
 
-// MARK: - Modified MapView
 struct MapView: View {
-    @StateObject private var mapViewModel: MapViewModel = MapViewModel()
+    @ObservedObject private var mapViewModel: MapViewModel
     @State private var selectedBoulder: Int? = nil
     
     let defaultScale: CGFloat = 0.5
     let zoomScale: CGFloat = 1.2
     @State var transform: CGAffineTransform
     
-    init() {
+    init(mapViewModel: MapViewModel) {
         _transform = State(initialValue: CGAffineTransform(scaleX: defaultScale, y: defaultScale))
+        self.mapViewModel = mapViewModel
     }
     
     var body: some View {
         ZStack {
-            Color(.systemGray5).ignoresSafeArea()
+            Color(.systemGray5)
+                .ignoresSafeArea()
             
             ZStack {
                 ForEach(Array(mapViewModel.gymSectors.enumerated()), id: \.offset) { sectorIndex, sector in
@@ -38,14 +39,15 @@ struct MapView: View {
             
             bouldersOverlay
                 .transformEffect(transform)
-                .drawingGroup()
                 .ignoresSafeArea()
-            
+                .drawingGroup()
+
+
             ForEach(Array(mapViewModel.gymSectors.enumerated()), id: \.offset) { sectorIndex, sector in
                 let center = sector.paths[0].path.boundingRect
-                
+
                 Text(sector.id)
-                    .font(.custom("Righteous-Regular", size: 10))
+                    .font(.custom("Righteous-Regular", size: 8))
                     .foregroundStyle(.white)
                     .position(x: center.midX, y: center.midY)
                     .background(
@@ -56,14 +58,16 @@ struct MapView: View {
                             .position(x: center.midX, y: center.midY)
                     )
                     .transformEffect(transform)
-                    .drawingGroup()
                     .ignoresSafeArea()
+                    .drawingGroup()
+
+
             }
         }
         .sheet(item: $selectedBoulder) { boulderId in
             BoulderInfoView(viewModel: BoulderInfoModel(boulderID: boulderId))
-        }
 
+        }
     }
     
     private var bouldersOverlay: some View {
@@ -169,7 +173,6 @@ struct MapView: View {
         }
     }}
 
-// MARK: - Helper Extension
 extension Int: Identifiable {
     public var id: Int { self }
 }
@@ -230,6 +233,28 @@ struct PathView: View {
     }
 }
 
-#Preview{
-    MapView()
+
+struct HighQualityText: UIViewRepresentable {
+    let text: String
+    let font: UIFont
+    let transform: CGAffineTransform
+    
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        let textLayer = CATextLayer()
+        textLayer.string = text
+        textLayer.font = font
+        textLayer.fontSize = font.pointSize
+        textLayer.foregroundColor = UIColor.white.cgColor
+        textLayer.alignmentMode = .center
+        view.layer.addSublayer(textLayer)
+        return view
+    }
+    
+    func updateUIView(_ uiView: UIView, context: Context) {
+        if let textLayer = uiView.layer.sublayers?.first as? CATextLayer {
+            textLayer.transform = CATransform3DMakeAffineTransform(transform)
+            textLayer.setAffineTransform(transform)
+        }
+    }
 }

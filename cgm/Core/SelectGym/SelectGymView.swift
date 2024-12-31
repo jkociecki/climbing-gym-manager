@@ -10,15 +10,16 @@ import Macaw
 
 struct SelectGymView: View {
     @State private var searchText: String = ""
-    @State private var selectedGym: Int? = nil
     @State private var favoriteGyms: Set<Int> = []
     @StateObject private var selectGymModel: SelectGymModel = SelectGymModel()
 
     var filteredGyms: [GymD] {
-        guard let gyms = selectGymModel.climbingGyms else { return [] }
+        let gyms = selectGymModel.climbingGyms
         return searchText.isEmpty
             ? gyms
-            : gyms.filter { $0.name.lowercased().contains(searchText.lowercased()) }
+        : gyms.filter { $0.name.lowercased().contains(searchText.lowercased())
+            || $0.address.lowercased().contains(searchText.lowercased())
+        }
     }
 
     var body: some View {
@@ -40,7 +41,6 @@ struct SelectGymView: View {
                             .clipShape(Circle())
 
                         
-                        // Nazwa i adres
                         VStack(alignment: .leading) {
                             Text(gym.name)
                                 .font(.headline)
@@ -51,10 +51,10 @@ struct SelectGymView: View {
                         Spacer()
 
                         Button(action: {
-                            selectedGym = gym.id
+                            selectGymModel.selectedGym = gym.id
                             selectGymModel.storeSelectedGymIntoUserData(gymID: gym.id)
                         }) {
-                            Image(systemName: selectedGym == gym.id ? "circle.inset.filled" : "circle")
+                            Image(systemName: selectGymModel.selectedGym == gym.id ? "circle.inset.filled" : "circle")
                                 .foregroundColor(.black)
                         }
                         .buttonStyle(PlainButtonStyle())

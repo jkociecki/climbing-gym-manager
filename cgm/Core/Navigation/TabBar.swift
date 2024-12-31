@@ -25,12 +25,10 @@ struct CustomTabBar: View {
                 )
             }
         }
-        .padding(.horizontal, 15)
+        .ignoresSafeArea()
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal)
         .padding(.vertical, 8)
-        .background(
-            Color.black.opacity(0.8)
-                .clipShape(RoundedRectangle(cornerRadius: 20))
-        )
         .padding(.horizontal)
         .padding(.bottom, getSafeArea().bottom == 0 ? 20 : getSafeArea().bottom)
     }
@@ -55,15 +53,19 @@ struct TabBarButton: View {
                 Image(systemName: getIcon())
                     .font(.system(size: 24))
                     .foregroundColor(selectedTab == image ? isSelectedColor : .white)
+                    .offset(y: 8)
+
                 
-                if selectedTab == image {
-                    Circle()
-                        .fill(isSelectedColor)
-                        .frame(width: 8, height: 8)
-                }
+                // Dodajemy placeholder dla kropki, który zawsze zajmuje miejsce
+                Circle()
+                    .fill(selectedTab == image ? isSelectedColor : .clear)
+                    .frame(width: 8, height: 8)
+                    .offset(y: 8)
+
             }
         }
         .frame(maxWidth: .infinity)
+        .frame(height: 20) // Dodajemy stałą wysokość dla przycisku
         .padding(.vertical, 8)
     }
     
@@ -71,7 +73,6 @@ struct TabBarButton: View {
         selectedTab == image ? "\(image).fill" : image
     }
 }
-
 extension View {
     func getSafeArea() -> UIEdgeInsets {
         guard let screen = UIApplication.shared.connectedScenes.first as? UIWindowScene,

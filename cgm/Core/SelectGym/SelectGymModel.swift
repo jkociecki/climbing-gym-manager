@@ -7,30 +7,38 @@
 
 import Foundation
 
-
-class SelectGymModel: ObservableObject{
-    @Published var climbingGyms: [GymD]? = nil
+class SelectGymModel: ObservableObject {
+    @Published var selectedGym: Int? = nil
+    @Published var climbingGyms: [GymD] = []
+    @Published var error: Error? = nil
     
     init() {
-        Task{ await fetchClimbingGymsData() }
+        getStoredData() // Pobranie wybranego Gym z UserDefaults
+        Task { await fetchClimbingGymsData() }
     }
-     
+    
     func fetchClimbingGymsData() async {
-        do{
+        do {
             let session = try await AuthManager.shared.client.auth.session
-            let user = session.user
             let data = try await DatabaseManager.shared.getGyms()
             self.climbingGyms = data
-        }catch{
-            print(error)
+        } catch {
+            self.error = error // Informacja o błędzie
+            print("Error fetching gyms: \(error)")
         }
     }
     
-    
-    func storeSelectedGymIntoUserData(gymID: Int){
+    func storeSelectedGymIntoUserData(gymID: Int) {
         UserDefaults.standard.set(String(gymID), forKey: "selectedGym")
     }
     
-    
-    
+    func getStoredData() {
+        if let idString = UserDefaults.standard.string(forKey: "selectedGym"),
+           let gymID = Int(idString) {
+            selectedGym = gymID
+        } else {
+            selectedGym = nil
+        }
+    }
 }
+
