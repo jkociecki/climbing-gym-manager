@@ -22,6 +22,7 @@ class BoulderInfoModel: ObservableObject {
     @Published var isFlashPressed: Bool = false
     @Published var isLoading: Bool = true
     @Published var votesData: [DatabaseManager.AllGradeGroupedVotes] = []
+    @Published var ratings: [StarVote] = []
     @Published var maxVoteCount: Int = 1
     @Published var errorMessage: String?
 
@@ -35,6 +36,7 @@ class BoulderInfoModel: ObservableObject {
             await loadBoulderData()
             await loadInitialState()
             await loadVotes()
+            await loadRatings()
         }
     }
 
@@ -88,6 +90,17 @@ class BoulderInfoModel: ObservableObject {
             }
         }
     }
+    
+    func loadRatings() async {
+        do {
+            let fetchedRatings = try await DatabaseManager.shared.getBoulderStarVotes(boulderID: boulderID)
+            self.ratings = fetchedRatings
+            self.isLoading = false
+        } catch {
+            print("Failed to fetch ratings: \(error)")
+            self.isLoading = false
+        }
+    }
 
     func handleButtonStateChange() async {
         do {
@@ -137,6 +150,8 @@ class BoulderInfoModel: ObservableObject {
         }
     }
 
+
+    
     private func setUnknownState() {
         difficulty = "Unknown"
         sector = "Unknown"

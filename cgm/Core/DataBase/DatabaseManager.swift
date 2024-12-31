@@ -74,15 +74,15 @@ class DatabaseManager {
     }
     
     func getGradeVote(boulderID: Int, userID: String) async throws -> GradeVote? {
-        let vote: GradeVote? = try await client
+        let vote: [GradeVote] = try await client
             .from("GradeVotes")
             .select("*")
             .eq("boulder_id", value: boulderID)
             .eq("user_id", value: userID)
-            .single()
+            .limit(1)
             .execute()
             .value
-        return vote
+        return vote.first
     }
     
     
@@ -122,18 +122,18 @@ class DatabaseManager {
 
         
     func getStarVote(boulderID: Int, userID: String) async throws -> StarVote? {
-        let vote: StarVote? = try await client
+        let vote: [StarVote] = try await client
             .from("StarVotes")
             .select("*")
             .eq("boulder_id", value: boulderID)
             .eq("user_id", value: userID)
-            .single()
+            .limit(1) // Pobierz maksymalnie jeden rekord
             .execute()
             .value
-        return vote
+        return vote.first
     }
 
-    
+
     func getBoulderStarVotes(boulderID: Int) async throws -> [StarVote] {
 
         let votes: [StarVote] = try await client
@@ -210,6 +210,7 @@ class DatabaseManager {
             .value
         return data
     }
+    
     func getUserOverID(userID: String) async throws -> User? {
         let data: User? = try await client
             .from("Users")
@@ -230,7 +231,26 @@ class DatabaseManager {
             .execute()
         print("Deleted response: \(response.data)")
     }
-
+    
+    func deleteStarVote(boulderID: Int, userID: String) async throws {
+        let response = try await client
+            .from("StarVotes")
+            .delete()
+            .eq("boulder_id", value: boulderID)
+            .eq("user_id", value: userID)
+            .execute()
+        print("Deleted response: \(response.data)")
+    }
+    
+    func deleteGradeVote(boulderID: Int, userID: String) async throws {
+        let response = try await client
+            .from("GradeVotes")
+            .delete()
+            .eq("boulder_id", value: boulderID)
+            .eq("user_id", value: userID)
+            .execute()
+        print("Deleted response: \(response.data)")
+    }
     
 
 
@@ -238,7 +258,7 @@ class DatabaseManager {
     struct AllGradeGroupedVotes: Identifiable {
         let id = UUID()
         let difficulty: String
-        let votes: Int
+        var votes: Int
     }
     func fetchGroupedGradeVotes(boulderID: Int, boulderDifficulty: String) async throws -> [AllGradeGroupedVotes] {
         // Fetch the votes from the database

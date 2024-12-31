@@ -7,8 +7,6 @@
 
 
 //TODO
-    //mozna cofac glosy
-    //aktualizuje sie wykres przy klikiecy change czy save
 
     //czciionke dodac
     //zrobic zeby gradient byl spokny dla ikonki i tekstu w buttonach
@@ -96,71 +94,6 @@ struct Buttons_FL_Done: View {
     }
 }
 
-struct ToppedByTable: View {
-    @ObservedObject var viewModel: BoulderInfoModel
-
-    var body: some View {
-        VStack(alignment: .leading) {
-            Text("Topped by")
-                .font(.system(size: 20, weight: .semibold))
-                .padding(.bottom, 8)
-
-            ForEach(viewModel.toppedByData, id: \.user_id) { toppedBy in
-                HStack {
-                    // Profile Image and Name
-                    HStack {
-                        Image(uiImage: viewModel.usersData[toppedBy.user_id]?.2
-                                .flatMap { UIImage(data: $0) }
-                                ?? UIImage(systemName: "person.crop.circle.fill")!)
-                            .resizable()
-                            .frame(width: 30, height: 30)
-                            .clipShape(Circle())
-
-                        if let user = viewModel.usersData[toppedBy.user_id] {
-                            Text("\(user.0 ?? "") \(user.1 ?? "")")
-                                .font(.system(size: 14, weight: .light))
-                                .foregroundColor(.black)
-                                .lineLimit(1)
-                                .truncationMode(.tail)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                    }
-
-                    Spacer()
-
-                    // Flash and Date Information
-                    VStack(alignment: .trailing) {
-                        Text(toppedBy.is_flashed ? "FL" : "RP")
-                            .font(.subheadline)
-                            .foregroundColor(.black)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-
-                        if let createdAt = toppedBy.created_at {
-                            Text("\(timeAgo(from: createdAt))")
-                                .font(.subheadline)
-                                .foregroundColor(.gray)
-                                .lineLimit(1)
-                                .truncationMode(.tail)
-                        }
-                    }
-                }
-                .padding(.vertical, 8)
-
-                Divider()
-                    .background(Color.gray)
-                    .frame(height: 1)
-            }
-        }
-        .padding(.horizontal, 20)
-        .cornerRadius(8)
-        .onAppear {
-            Task {
-                await viewModel.fetchToppedByData()
-            }
-        }
-    }
-}
 
 struct BoulderTopBar: View {
     var difficulty: String
@@ -335,10 +268,10 @@ struct SwitchableView: View {
             
             if selectedTab == .gradeRating {
                 VotesAndSliderView(
+                    boulderInfoModel: boulderInfoModel,
                     userId: userID,
                     boulderId: boulderID,
-                    initialDifficulty: boulderInfoModel.difficulty,
-                    votesData: boulderInfoModel.votesData
+                    initialDifficulty: boulderInfoModel.difficulty
                 )
             } else if selectedTab == .starRating {
                 RatingSummaryAndRatingView(userId: userID, boulderId: boulderID)
@@ -353,19 +286,20 @@ struct SwitchableView: View {
 }
 
 struct VotesAndSliderView: View {
+    @ObservedObject var boulderInfoModel: BoulderInfoModel
     var userId: String
     var boulderId: Int
     var initialDifficulty: String
-    var votesData: [DatabaseManager.AllGradeGroupedVotes]
     
     @State private var sliderValue: Double = 0
     @State private var isChanged: Bool = false
-    @State private var isInitialDifficultyLoaded: Bool = false  // Track if initial difficulty is loaded
-    
+    @State private var isInitialDifficultyLoaded: Bool = false
+    @State private var isSliderChanged: Bool = false
+    @State private var gradeVote: GradeVote? = nil
+
     var body: some View {
         VStack(spacing: 0) {
-            // Vote Chart, you can change this based on how you want to display votes
-            VotesBarChart(votesData: votesData)
+            VotesBarChart(votesData: boulderInfoModel.votesData)
             
             Divider()
                 .padding(.vertical, 20)
@@ -381,7 +315,11 @@ struct VotesAndSliderView: View {
                         await fetchUserVote()
                     }
                 }
-                
+                .onChange(of: sliderValue) { newValue in
+                    isSliderChanged = newValue != Double(getDifficultiesSubset().firstIndex(of: gradeVote?.grade_vote ?? initialDifficulty) ?? 0)
+                    isChanged = isSliderChanged
+                }
+
                 HStack {
                     Spacer()
                     Button(action: {
@@ -389,9 +327,9 @@ struct VotesAndSliderView: View {
                             await saveOrUpdateVote()
                         }
                     }) {
-                        Text(isChanged ? "CHANGE" : "SAVE")
+                        Text(getButtonText())
                             .font(.system(size: 17, weight: .semibold))
-                            .foregroundColor(Color("Fioletowy"))
+                            .foregroundColor(getButtonTextColor())
                     }
                     .padding(.trailing, 30)
                     .padding(.bottom, 20)
@@ -419,19 +357,16 @@ struct VotesAndSliderView: View {
             let difficulties = getDifficultiesSubset()
 
             if let fetchedVote = try await DatabaseManager.shared.getGradeVote(boulderID: boulderId, userID: userId) {
+                gradeVote = fetchedVote
                 if let index = difficulties.firstIndex(of: fetchedVote.grade_vote) {
                     sliderValue = Double(index)
-                } else {
-                    //print("fetched vote is not in the difficulties")
                 }
                 isChanged = true
             } else {
                 if let index = difficulties.firstIndex(of: initialDifficulty) {
                     sliderValue = Double(index)
-                } else {
-                    //print("initialDifficulty is not found in the difficulties list")
                 }
-
+                gradeVote = nil
                 isChanged = false
             }
             
@@ -451,17 +386,31 @@ struct VotesAndSliderView: View {
         )
 
         do {
-            try await DatabaseManager.shared.updateGradeVote(gradeVote: newGradeVote)
-            if isChanged {
-                print("Updated grade vote")
+            if let existingVote = gradeVote {
+                if existingVote.grade_vote == selectedDifficulty {
+                    try await DatabaseManager.shared.deleteGradeVote(boulderID: existingVote.boulder_id, userID: existingVote.user_id)
+                    print("Deleted grade vote")
+                    updateVotesDataForDelete(gradeVote: existingVote)
+                    gradeVote = nil
+                    isChanged = false
+                } else {
+                    try await DatabaseManager.shared.updateGradeVote(gradeVote: newGradeVote)
+                    print("Updated grade vote")
+                    updateVotesDataForUpdate(oldVote: existingVote, newVote: newGradeVote)
+                    gradeVote = newGradeVote
+                }
             } else {
+                try await DatabaseManager.shared.updateGradeVote(gradeVote: newGradeVote)
                 print("Created new grade vote")
+                updateVotesDataForUpdate(oldVote: nil, newVote: newGradeVote)
+                gradeVote = newGradeVote
+                isChanged = true
             }
-            isChanged = true
         } catch {
-            print("Error saving or updating star vote: \(error)")
+            print("Error saving or updating grade vote: \(error)")
         }
     }
+
 
     private func getCurrentDifficulty() -> String {
         let currentIndex = Int(sliderValue)
@@ -476,7 +425,55 @@ struct VotesAndSliderView: View {
         
         return Array(allDifficulties[lowerBound...upperBound])
     }
+    
+    private func getButtonText() -> String {
+        if let existingVote = gradeVote {
+            if existingVote.grade_vote == getCurrentDifficulty() {
+                return "DELETE"
+            } else {
+                return "UPDATE"
+            }
+        } else {
+            return "SAVE"
+        }
+    }
+
+    private func getButtonTextColor() -> Color {
+        if let existingVote = gradeVote, existingVote.grade_vote == getCurrentDifficulty() {
+            return Color.gray
+        } else {
+            return Color("Fioletowy")
+        }
+    }
+
+    private func updateVotesDataForUpdate(oldVote: GradeVote?, newVote: GradeVote) {
+        var updatedVotesData = boulderInfoModel.votesData
+        
+        if let oldVote = oldVote {
+            if let oldIndex = updatedVotesData.firstIndex(where: { $0.difficulty == oldVote.grade_vote }) {
+                updatedVotesData[oldIndex].votes -= 1
+            }
+        }
+        
+        if let newIndex = updatedVotesData.firstIndex(where: { $0.difficulty == newVote.grade_vote }) {
+            updatedVotesData[newIndex].votes += 1
+        } else {
+            updatedVotesData.append(DatabaseManager.AllGradeGroupedVotes(difficulty: newVote.grade_vote, votes: 1))
+        }
+        
+        boulderInfoModel.votesData = updatedVotesData
+    }
+
+    private func updateVotesDataForDelete(gradeVote: GradeVote) {
+        var updatedVotesData = boulderInfoModel.votesData
+        
+        if let oldIndex = updatedVotesData.firstIndex(where: { $0.difficulty == gradeVote.grade_vote }) {
+            updatedVotesData[oldIndex].votes -= 1
+        }
+        boulderInfoModel.votesData = updatedVotesData
+    }
 }
+
 
 
 
@@ -524,7 +521,6 @@ struct BoulderDifficultySlider: View {
     }
 
     
-    //bez tego wychodzi poza index i wywala previdew
     private func safeIndex(for value: Double) -> Int {
         let index = Int(value)
         return min(max(index, 0), difficulties.count - 1)
@@ -565,12 +561,10 @@ struct VotesBarChart: View {
                 ForEach(votesData) { vote in
                     VStack {
                         ZStack(alignment: .bottom) {
-                            // Background bar (gray)
                             Capsule()
                                 .fill(Color.gray.opacity(0.2))
                                 .frame(width: 12, height: 110)
 
-                            // Gradient filled bar based on the number of votes
                             Capsule()
                                 .fill(
                                     LinearGradient(
@@ -586,7 +580,6 @@ struct VotesBarChart: View {
                                 .shadow(radius: 2)
                         }
 
-                        // Difficulty label with vote count at the top
                         VStack {
                             Text(vote.difficulty)
                                 .font(.system(size: 13))
@@ -608,9 +601,8 @@ struct VotesBarChart: View {
 }
 
 struct RatingSummaryView: View {
-    @State private var ratings: [StarVote] = []
-    @State private var isLoading = true
-    let boulderID: Int
+    let ratings: [StarVote]
+    @State private var isLoading: Bool = true
     
     var averageRating: Double {
         let totalRating = ratings.reduce(0) { $0 + Double($1.star_vote) }
@@ -624,17 +616,6 @@ struct RatingSummaryView: View {
     var ratingDistribution: [Int] {
         (1...5).map { rating in
             ratings.filter { $0.star_vote == rating }.count
-        }
-    }
-    
-    func loadRatings() async {
-        do {
-            let fetchedRatings = try await DatabaseManager.shared.getBoulderStarVotes(boulderID: boulderID)
-            self.ratings = fetchedRatings
-            self.isLoading = false
-        } catch {
-            print("Failed to fetch ratings: \(error)")
-            self.isLoading = false
         }
     }
     
@@ -719,12 +700,14 @@ struct RatingSummaryView: View {
         .padding(.horizontal, 20)
         .padding(.top, 30)
         .onAppear {
-            Task {
-                await loadRatings()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                isLoading = false
             }
         }
     }
 }
+
+
 
 struct RatingView: View {
     @Binding var selectedRating: Int
@@ -741,7 +724,7 @@ struct RatingView: View {
             }
         }
         .padding(.top, 10)
-        .padding(.bottom, 30)
+        .padding(.bottom, 20)
     }
 }
 
@@ -765,8 +748,9 @@ struct RatingSummaryAndRatingView: View {
             if let fetchedVote = try await DatabaseManager.shared.getStarVote(boulderID: boulderId, userID: userId) {
                 starVote = fetchedVote
                 selectedRating = fetchedVote.star_vote
-                isChanged = true
+                isChanged = false
             } else {
+                starVote = nil
                 isChanged = false
                 selectedRating = 5
             }
@@ -775,6 +759,7 @@ struct RatingSummaryAndRatingView: View {
         }
     }
     
+
     func saveOrUpdateVote() async {
         let newStarVote = StarVote(
             user_id: userId,
@@ -784,23 +769,49 @@ struct RatingSummaryAndRatingView: View {
         )
         
         do {
-            try await DatabaseManager.shared.updateStarVote(starVote: newStarVote)
-            if isChanged {
-                print("Updated star vote")
+            if let existingVote = starVote {
+                if existingVote.star_vote == selectedRating {
+                    try await DatabaseManager.shared.deleteStarVote(boulderID: existingVote.boulder_id, userID: existingVote.user_id)
+                    print("Deleted star vote")
+                    updateVotesDataForDelete(starVote: existingVote)
+                    starVote = nil
+                    isChanged = false
+                } else {
+                    try await DatabaseManager.shared.updateStarVote(starVote: newStarVote)
+                    print("Updated star vote")
+                    updateVotesDataForUpdate(oldVote: existingVote, newVote: newStarVote)
+                    starVote = newStarVote
+                    isChanged = true
+                }
             } else {
+                try await DatabaseManager.shared.updateStarVote(starVote: newStarVote)
                 print("Created new star vote")
+                updateVotesDataForUpdate(oldVote: nil, newVote: newStarVote)
+                starVote = newStarVote
+                isChanged = true
             }
-            
-            isChanged = true
         } catch {
             print("Error saving or updating star vote: \(error)")
         }
     }
     
+    private func updateVotesDataForDelete(starVote: StarVote) {
+        if let index = boulderInfoModel.ratings.firstIndex(where: { $0.user_id == starVote.user_id }) {
+            boulderInfoModel.ratings.remove(at: index)
+        }
+    }
+    
+    private func updateVotesDataForUpdate(oldVote: StarVote?, newVote: StarVote) {
+        if let oldVote = oldVote, let index = boulderInfoModel.ratings.firstIndex(where: { $0.user_id == oldVote.user_id }) {
+            boulderInfoModel.ratings[index] = newVote
+        } else {
+            boulderInfoModel.ratings.append(newVote)
+        }
+    }
+    
     var body: some View {
         VStack(spacing: 0) {
-            
-            RatingSummaryView(boulderID: boulderId)
+            RatingSummaryView(ratings: boulderInfoModel.ratings)
             
             RatingView(selectedRating: $selectedRating)
                 .onAppear {
@@ -816,9 +827,11 @@ struct RatingSummaryAndRatingView: View {
                         await saveOrUpdateVote()
                     }
                 }) {
-                    Text(isChanged ? "CHANGE" : "SAVE")
+                    Text(getButtonText())
                         .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(Color("Fioletowy"))
+                        .foregroundColor(getButtonTextColor())
+                        .padding()
+                        .cornerRadius(8)
                 }
                 .padding(.trailing, 30)
                 .padding(.bottom, 20)
@@ -827,9 +840,100 @@ struct RatingSummaryAndRatingView: View {
         }
         .background(Color(UIColor.systemGray6))
         .cornerRadius(12)
-        .padding(16)
+    }
+    
+    private func getButtonText() -> String {
+        if let existingVote = starVote {
+            if existingVote.star_vote == selectedRating {
+                return "DELETE"
+            } else {
+                return "UPDATE"
+            }
+        } else {
+            return "SAVE"
+        }
+    }
+    
+    private func getButtonTextColor() -> Color {
+        if let existingVote = starVote {
+            if existingVote.star_vote == selectedRating {
+                return Color.gray
+            } else {
+                return Color("Fioletowy")
+            }
+        } else {
+            return Color("Fioletowy")
+        }
     }
 }
+
+
+
+
+struct ToppedByTable: View {
+    @ObservedObject var viewModel: BoulderInfoModel
+
+    var body: some View {
+        VStack(alignment: .leading) {
+            Text("Topped by")
+                .font(.system(size: 20, weight: .semibold))
+                .padding(.bottom, 8)
+
+            ForEach(viewModel.toppedByData, id: \.user_id) { toppedBy in
+                HStack {
+                    HStack {
+                        Image(uiImage: viewModel.usersData[toppedBy.user_id]?.2
+                                .flatMap { UIImage(data: $0) }
+                                ?? UIImage(systemName: "person.crop.circle.fill")!)
+                            .resizable()
+                            .frame(width: 30, height: 30)
+                            .clipShape(Circle())
+
+                        if let user = viewModel.usersData[toppedBy.user_id] {
+                            Text("\(user.0 ?? "") \(user.1 ?? "")")
+                                .font(.system(size: 14, weight: .light))
+                                .foregroundColor(.black)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }
+
+                    Spacer()
+
+                    VStack(alignment: .trailing) {
+                        Text(toppedBy.is_flashed ? "FL" : "RP")
+                            .font(.subheadline)
+                            .foregroundColor(.black)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+
+                        if let createdAt = toppedBy.created_at {
+                            Text("\(timeAgo(from: createdAt))")
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                        }
+                    }
+                }
+                .padding(.vertical, 8)
+
+                Divider()
+                    .background(Color.gray)
+                    .frame(height: 1)
+            }
+        }
+        .padding(.horizontal, 20)
+        .cornerRadius(8)
+        .onAppear {
+            Task {
+                await viewModel.fetchToppedByData()
+            }
+        }
+    }
+}
+
 
 struct BoulderInfo_Previews: PreviewProvider {
     static var previews: some View {
