@@ -84,6 +84,8 @@ struct GymChatView: View {
     }
 }
 
+import SwiftUI
+
 struct PostView: View {
     @Environment(\.colorScheme) var colorScheme
 
@@ -112,7 +114,8 @@ struct PostView: View {
                     Text(post.userName)
                         .font(.custom("Inter18pt-Regular", size: 15))
                     
-                    Text(post.date)
+                    // Formatowanie daty bez mikrosekund, tylko dzień, miesiąc i rok
+                    Text(formatDate2(post.date))
                         .font(.custom("Inter18pt-Light", size: 12))
                         .foregroundColor(.gray)
                         
@@ -154,6 +157,8 @@ struct PostView: View {
         .cornerRadius(12)
     }
 }
+
+
 
 
 struct ContentView_Previews: PreviewProvider {
