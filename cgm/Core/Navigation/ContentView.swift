@@ -6,63 +6,76 @@ struct MainView: View {
     @State private var showSideMenu:        Bool = false
     @State private var selectedView:        String = "Home"
     @State private var showFilterPanel:     Bool = false
-    
+    @State private var isAuthenticated: Bool = true  // New state
+
     @StateObject private var mapViewModel: MapViewModel = MapViewModel()
+    @StateObject private var authManager = AuthManager.shared
+
     
     
     var body: some View {
-            ZStack{
-
-                TopBar(config: getTopBarConfig())
-                        .zIndex(1)
-                        .offset(x: showSideMenu ? UIScreen.main.bounds.width * 0.8 : 0)
-                        .ignoresSafeArea()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                        .padding(.top, -5)
-                        
-                                        
-                TabView(selectedTab: $selectedTab, selectedView: $selectedView, mapViewModel: mapViewModel)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .ignoresSafeArea()
-                    .zIndex(0)
-
-                    
-                CustomTabBar(selectedTab: $selectedTab, onTabSelected: { tab in
-                    selectedTab = tab
-                    selectedView = getDefaultViewForTab(tab)
-                })
-                .offset(x: showSideMenu ? UIScreen.main.bounds.width * 0.8 : 0)
-                .background(Color.black.opacity(0.8)) // Tło dla TabBar
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                .padding(.bottom, -40)
-                
-                if showSideMenu {
-                    Color.black
-                        .opacity(0.5)
-                        .ignoresSafeArea()
-                        .onTapGesture {
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                showSideMenu = false
-                            }
-                        }
-                }
-                
-                SideMenuView(showSideMenu: $showSideMenu, selectedView: $selectedView)
-                    .zIndex(1)
-                
-                SlidingFilterPanel(isShowing: $showFilterPanel, mapViewModel: mapViewModel)
-                    .zIndex(2)
-            }
-            .ignoresSafeArea(.keyboard, edges: .bottom)
-            .animation(.easeInOut(duration: 0.3), value: showSideMenu)
-        
-        }
+         Group {
+             if authManager.isAuthenticated {
+                 ZStack {
+                     TopBar(config: getTopBarConfig())
+                         .zIndex(1)
+                         .offset(x: showSideMenu ? UIScreen.main.bounds.width * 0.8 : 0)
+                         .ignoresSafeArea()
+                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                         .padding(.top, -5)
+                     
+                     TabView(selectedTab: $selectedTab,
+                            selectedView: $selectedView,
+                            mapViewModel: mapViewModel)
+                         .frame(maxWidth: .infinity, maxHeight: .infinity)
+                         .ignoresSafeArea()
+                         .zIndex(0)
+                     
+                     CustomTabBar(selectedTab: $selectedTab, onTabSelected: { tab in
+                         selectedTab = tab
+                         selectedView = getDefaultViewForTab(tab)
+                     })
+                     .offset(x: showSideMenu ? UIScreen.main.bounds.width * 0.8 : 0)
+                     .background(Color.black.opacity(0.8))
+                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                     .padding(.bottom, -40)
+                     
+                     if showSideMenu {
+                         Color.black
+                             .opacity(0.5)
+                             .ignoresSafeArea()
+                             .onTapGesture {
+                                 withAnimation(.easeInOut(duration: 0.3)) {
+                                     showSideMenu = false
+                                 }
+                             }
+                     }
+                     
+                     SideMenuView(showSideMenu: $showSideMenu,
+                                 selectedView: $selectedView)
+                         .zIndex(1)
+                     
+                     SlidingFilterPanel(isShowing: $showFilterPanel,
+                                      mapViewModel: mapViewModel)
+                         .zIndex(2)
+                 }
+                 .ignoresSafeArea(.keyboard, edges: .bottom)
+                 .animation(.easeInOut(duration: 0.3), value: showSideMenu)
+             } else {
+                 RegisterView()
+                     .navigationBarBackButtonHidden(true)
+             }
+         }
+         .task {
+             await authManager.checkAuth()
+         }
+     }
     
     private func getTopBarConfig() -> TopBarConfig {
         switch selectedView {
         case "Home":
             return TopBarConfig(
-                title: "Home",
+                title: UserDefaults.standard.string(forKey: "selectedGymName") ?? "Gym Name",
                 leftButton: .menuButton(showSideMenu: $showSideMenu),
                 rightButton: .notification {
                     withAnimation(.easeInOut(duration: 0.3)) {
@@ -80,9 +93,9 @@ struct MainView: View {
                 }
             )
             
-        case "About Gym":
+        case "Add New":
             return TopBarConfig(
-                title: "About Gym",
+                title: ( UserDefaults.standard.string(forKey: "selectedGymName") ?? "Gym" ) + " Chat",
                 leftButton: .back {
                     selectedView = "Home"
                 },
@@ -113,6 +126,8 @@ struct TabView: View {
     @Binding var selectedTab: String
     @Binding var selectedView: String
     @ObservedObject var mapViewModel: MapViewModel
+    @StateObject private var authManager = AuthManager.shared
+
     
     var body: some View {
         ZStack {
@@ -125,12 +140,10 @@ struct TabView: View {
                         }
                 case "chart.bar":
                     RankingView()
-                        .padding(.top, 100)
                 case "person":
-                    ProfileView()
+                    ProfileView(userID: AuthManager.shared.userUID ?? "")
                 case "plus":
                     GymChatView()
-                        .padding(.top, 100)
                 default:
                     MapView(mapViewModel: mapViewModel)
                 }
@@ -148,7 +161,7 @@ struct TabView: View {
                  case "Settings":
                     AddNewView()
                 case "Logout":
-                    AddNewView()
+                    LogoutHandlerView()
                 default:
                     HomeView()
                 }
@@ -210,5 +223,40 @@ struct HomeView: View {
 struct MainView_Previews: PreviewProvider {
     static var previews: some View {
         MainView()
+    }
+}
+
+struct LogoutHandlerView: View {
+    @StateObject private var authManager = AuthManager.shared
+    @State private var showError = false
+    @State private var errorMessage = ""
+    @State private var isLoggingOut = false
+    
+    var body: some View {
+        VStack {
+            if isLoggingOut {
+                ProgressView("Logging out...")
+            }
+        }
+        .alert("Error", isPresented: $showError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(errorMessage)
+        }
+        .task {
+            await handleLogout()
+        }
+    }
+    
+    private func handleLogout() async {
+        isLoggingOut = true
+        do {
+            try await authManager.logOut()
+            await authManager.checkAuth() // This will set isAuthenticated to false
+        } catch {
+            errorMessage = error.localizedDescription
+            showError = true
+        }
+        isLoggingOut = false
     }
 }

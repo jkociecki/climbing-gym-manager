@@ -65,7 +65,7 @@ struct MapView: View {
             }
         }
         .sheet(item: $selectedBoulder) { boulderId in
-            BoulderInfoView(viewModel: BoulderInfoModel(boulderID: boulderId))
+            BoulderInfoView(viewModel: BoulderInfoModel(boulderID: boulderId, userID: AuthManager.shared.userUID ?? ""), boulders: $mapViewModel.boulders)
 
         }
     }

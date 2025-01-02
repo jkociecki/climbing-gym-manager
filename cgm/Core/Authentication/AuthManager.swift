@@ -19,6 +19,7 @@ struct AppUser{
 class AuthManager: ObservableObject {
     static let shared = AuthManager()
     @Published var isAuthenticated = false
+    @Published var userUID: String?
 
     
     private init() {}
@@ -32,17 +33,23 @@ class AuthManager: ObservableObject {
     
     func signInWithEmail(email: String, password: String) async throws -> AppUser{
         let session = try await client.auth.signIn(email: email, password: password)
+        self.userUID = session.user.id.uuidString
         return AppUser(uid: session.user.id.uuidString, email: session.user.email)
     }
     
     func registerWithEmail(email: String, password: String) async throws -> AppUser{
         let registerResponse = try await client.auth.signUp(email: email, password: password)
         guard let session = registerResponse.session else { throw NSError() }
+        self.userUID = session.user.id.uuidString
         return AppUser(uid: session.user.id.uuidString, email: session.user.email)
     }
     
     func storeUser(){
         
+    }
+    
+    func logOut() async throws {
+       try await client.auth.signOut()
     }
     
     @MainActor

@@ -15,6 +15,7 @@ import SwiftUI
 
 struct BoulderInfoView: View {
     @StateObject var viewModel: BoulderInfoModel
+    @Binding var boulders: [Boulder]
 
     var body: some View {
         ZStack {
@@ -27,7 +28,7 @@ struct BoulderInfoView: View {
                         routesetter: viewModel.routesetter,
                         color: viewModel.color
                     )
-                    Buttons_FL_Done(viewModel: viewModel)
+                    Buttons_FL_Done(viewModel: viewModel, boulders: $boulders)
 
                     Divider()
                         .padding(.horizontal, 30)
@@ -50,6 +51,18 @@ struct BoulderInfoView: View {
 
 struct Buttons_FL_Done: View {
     @ObservedObject var viewModel: BoulderInfoModel
+    @Binding var boulders: [Boulder]
+
+    func handleButtonStateChange() {
+        if let boulder = boulders.firstIndex(where: { $0.id == viewModel.boulderID }) {
+            if !viewModel.isDonePressed && !viewModel.isFlashPressed {
+                boulders[boulder].isDone = FlashDoneNone.NotDone
+            } else {
+                boulders[boulder].isDone = viewModel.isFlashPressed ? FlashDoneNone.Done : FlashDoneNone.Flash
+            }
+        }
+
+    }
 
     var body: some View {
         VStack {
@@ -67,6 +80,7 @@ struct Buttons_FL_Done: View {
                             viewModel.isDonePressed.toggle()
                             viewModel.isFlashPressed = false
                             Task {
+                                handleButtonStateChange()
                                 await viewModel.handleButtonStateChange()
                             }
                         }
@@ -82,6 +96,7 @@ struct Buttons_FL_Done: View {
                             viewModel.isFlashPressed.toggle()
                             viewModel.isDonePressed = false
                             Task {
+                                handleButtonStateChange()
                                 await viewModel.handleButtonStateChange()
                             }
                         }
@@ -935,9 +950,5 @@ struct ToppedByTable: View {
 }
 
 
-struct BoulderInfo_Previews: PreviewProvider {
-    static var previews: some View {
-        BoulderInfoView(viewModel: BoulderInfoModel(boulderID: 6))
-    }
-}
+
 
