@@ -36,7 +36,9 @@ struct RankingView: View {
 
     var body: some View {
         VStack {
-            // Dodanie SearchBar
+            Spacer(minLength: 100)
+
+
             SearchBar(text: $searchText)
 
             SelectGenderMikolajKradnieNazwe(selectedGender: $selectedGender)
@@ -47,7 +49,7 @@ struct RankingView: View {
 
             RankingInfo()
 
-            RankingUsersView(users: filteredUsers)
+            RankingUsersView(users: filteredUsers, isSearchActive: !searchText.isEmpty)
         }
         .onAppear {
             Task {
@@ -61,6 +63,7 @@ struct RankingView: View {
         }
     }
 }
+
 
 
 struct SearchBar: View {
@@ -127,6 +130,7 @@ struct RankingInfo: View {
 
 struct RankingUsersView: View {
     var users: [RankingUser] // Lista użytkowników
+    var isSearchActive: Bool // Czy wyszukiwanie jest aktywne
     
     var body: some View {
         ScrollView {
@@ -154,8 +158,8 @@ struct RankingUsersView: View {
                                 .truncationMode(.tail)
                                 .frame(maxWidth: 200, alignment: .leading)
                             
-                            // Dodanie pucharu dla Top 3
-                            if index < 3 {
+                            // Dodanie pucharu dla Top 3, tylko jeśli wyszukiwanie jest wyłączone
+                            if index < 3 && !isSearchActive {
                                 Image(systemName: "trophy.fill")
                                     .foregroundColor(index == 0 ? .yellow : (index == 1 ? .gray : .brown))
                                     .font(.system(size: 16))
@@ -191,6 +195,7 @@ struct RankingUsersView: View {
         }
     }
 }
+
 
 struct RankingView_Previews: PreviewProvider {
     static var previews: some View {

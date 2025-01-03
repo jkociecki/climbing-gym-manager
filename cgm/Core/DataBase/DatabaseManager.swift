@@ -201,14 +201,14 @@ class DatabaseManager {
     }
     
     func getUser(userID: String) async throws -> User? {
-        let data: User? = try await client
+        let data: [User] = try await client
             .from("Users")
             .select("*")
             .eq("uid", value: userID)
-            .single()
+            .limit(1)
             .execute()
             .value
-        return data
+        return data.first
     }
     
     func getUserOverID(userID: String) async throws -> User? {

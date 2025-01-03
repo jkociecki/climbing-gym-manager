@@ -148,6 +148,10 @@ struct PostView: View {
 
                 Text("Comments")
                     .font(.custom("Inter18pt-SemiBold", size: 12))
+                
+                Text("\(post.commentsCount)")
+                                  .font(.custom("Inter18pt-SemiBold", size: 12))
+                                  .foregroundStyle(.gray)
             }
             .padding(.top, 4)
             .padding(.horizontal, 2)

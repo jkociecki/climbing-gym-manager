@@ -19,40 +19,42 @@ struct BoulderInfoView: View {
 
     var body: some View {
         ZStack {
-            ScrollView {
-                VStack {
-                    Spacer()
-                    BoulderTopBar(
-                        difficulty: viewModel.difficulty,
-                        sector: viewModel.sector,
-                        routesetter: viewModel.routesetter,
-                        color: viewModel.color
-                    )
-                    Buttons_FL_Done(viewModel: viewModel, boulders: $boulders)
+            if viewModel.isLoading {
+                AnimatedLoader(size: 60) 
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                    Divider()
-                        .padding(.horizontal, 30)
-                        .padding(.vertical, 10)
-                    
-                    SwitchableView(
-                        userID: viewModel.userID,
-                        boulderID: viewModel.boulderID,
-                        initialDifficulty: viewModel.difficulty)
+            } else {
+                ScrollView {
+                    VStack {
+                        Spacer()
+                        BoulderTopBar(
+                            difficulty: viewModel.difficulty,
+                            sector: viewModel.sector,
+                            routesetter: viewModel.routesetter,
+                            color: viewModel.color
+                        )
+                        Buttons_FL_Done(viewModel: viewModel, boulders: $boulders)
 
+                        Divider()
+                            .padding(.horizontal, 30)
+                            .padding(.vertical, 10)
+                        
+                        SwitchableView(boulderInfoModel: viewModel)
+                        
+                        ToppedByTable(viewModel: viewModel)
 
-                    ToppedByTable(viewModel: viewModel)
-
-                    Spacer()
+                        Spacer()
+                    }
                 }
             }
         }
     }
 }
 
+
 struct Buttons_FL_Done: View {
     @ObservedObject var viewModel: BoulderInfoModel
     @Binding var boulders: [Boulder]
-
     func handleButtonStateChange() {
         if let boulder = boulders.firstIndex(where: { $0.id == viewModel.boulderID }) {
             if !viewModel.isDonePressed && !viewModel.isFlashPressed {
@@ -61,53 +63,49 @@ struct Buttons_FL_Done: View {
                 boulders[boulder].isDone = viewModel.isFlashPressed ? FlashDoneNone.Done : FlashDoneNone.Flash
             }
         }
-
     }
 
     var body: some View {
         VStack {
-            if viewModel.isLoading {
-                ProgressView()
-            } else {
-                HStack(spacing: 16) {
-                    GradientButton(
-                        iconName: "hand.thumbsup.fill",
-                        buttonText: "DONE",
-                        gradientStartColor: Color("Czerwony"),
-                        gradientEndColor: Color("Fioletowy"),
-                        isPressed: viewModel.isDonePressed,
-                        onTap: {
-                            viewModel.isDonePressed.toggle()
-                            viewModel.isFlashPressed = false
-                            Task {
-                                handleButtonStateChange()
-                                await viewModel.handleButtonStateChange()
-                            }
+            HStack(spacing: 16) {
+                GradientButton(
+                    iconName: "hand.thumbsup.fill",
+                    buttonText: "DONE",
+                    gradientStartColor: Color("Czerwony"),
+                    gradientEndColor: Color("Fioletowy"),
+                    isPressed: viewModel.isDonePressed,
+                    onTap: {
+                        viewModel.isDonePressed.toggle()
+                        viewModel.isFlashPressed = false
+                        Task {
+                            handleButtonStateChange()
+                            await viewModel.handleButtonStateChange()
                         }
-                    )
+                    }
+                )
 
-                    GradientButton(
-                        iconName: "hands.clap.fill",
-                        buttonText: "FLASH",
-                        gradientStartColor: Color("Fioletowy"),
-                        gradientEndColor: Color("Czerwony"),
-                        isPressed: viewModel.isFlashPressed,
-                        onTap: {
-                            viewModel.isFlashPressed.toggle()
-                            viewModel.isDonePressed = false
-                            Task {
-                                handleButtonStateChange()
-                                await viewModel.handleButtonStateChange()
-                            }
+                GradientButton(
+                    iconName: "hands.clap.fill",
+                    buttonText: "FLASH",
+                    gradientStartColor: Color("Fioletowy"),
+                    gradientEndColor: Color("Czerwony"),
+                    isPressed: viewModel.isFlashPressed,
+                    onTap: {
+                        viewModel.isFlashPressed.toggle()
+                        viewModel.isDonePressed = false
+                        Task {
+                            handleButtonStateChange()
+                            await viewModel.handleButtonStateChange()
                         }
-                    )
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 10)
+                    }
+                )
             }
+            .padding(.horizontal, 16)
+            .padding(.top, 10)
         }
     }
 }
+
 
 
 struct BoulderTopBar: View {
@@ -232,7 +230,7 @@ struct SwitchableButton: View
                 .font(.system(size: 15, weight: .semibold))
                 .padding()
                 .frame(maxWidth: .infinity, maxHeight: 42)
-                .background(isSelected ? Color("Fioletowy") : Color("SzaryTlo"))
+                .background(isSelected ? Color("Fioletowy") : Color.gray)
                 .foregroundColor(isSelected ? .white : .black)
                 .cornerRadius(15)
         }
@@ -241,27 +239,22 @@ struct SwitchableButton: View
 }
 
 struct SwitchableView: View {
-    var userID: String
-    var boulderID: Int
-    var initialDifficulty: String
-    
+
     @State private var selectedTab: Tab = .gradeRating
-    @StateObject private var boulderInfoModel: BoulderInfoModel
-    
+    @ObservedObject var boulderInfoModel: BoulderInfoModel
+
     enum Tab {
         case gradeRating
         case starRating
     }
-    
-    init(userID: String, boulderID: Int, initialDifficulty: String) {
-        self.userID = userID
-        self.boulderID = boulderID
-        self.initialDifficulty = initialDifficulty
-        _boulderInfoModel = StateObject(wrappedValue: BoulderInfoModel(boulderID: boulderID, userID: userID))
+
+    init(boulderInfoModel: BoulderInfoModel) {
+        self.boulderInfoModel = boulderInfoModel
     }
 
     var body: some View {
         VStack {
+            // Górny przełącznik zakładek
             HStack(spacing: -20) {
                 SwitchableButton(
                     buttonText: "GRADE RATING",
@@ -280,16 +273,14 @@ struct SwitchableView: View {
                 )
             }
             .padding(.horizontal)
-            
+
+            // Widok zależny od wybranej zakładki
             if selectedTab == .gradeRating {
                 VotesAndSliderView(
-                    boulderInfoModel: boulderInfoModel,
-                    userId: userID,
-                    boulderId: boulderID,
-                    initialDifficulty: boulderInfoModel.difficulty
+                    boulderInfoModel: boulderInfoModel
                 )
             } else if selectedTab == .starRating {
-                RatingSummaryAndRatingView(userId: userID, boulderId: boulderID)
+                RatingSummaryAndRatingView(boulderInfoModel: boulderInfoModel)
             }
         }
         .onAppear {
@@ -302,10 +293,7 @@ struct SwitchableView: View {
 
 struct VotesAndSliderView: View {
     @ObservedObject var boulderInfoModel: BoulderInfoModel
-    var userId: String
-    var boulderId: Int
-    var initialDifficulty: String
-    
+
     @State private var sliderValue: Double = 0
     @State private var isChanged: Bool = false
     @State private var isInitialDifficultyLoaded: Bool = false
@@ -321,7 +309,7 @@ struct VotesAndSliderView: View {
 
             if isInitialDifficultyLoaded {
                 BoulderDifficultySlider(
-                    initialDifficulty: initialDifficulty,
+                    initialDifficulty: boulderInfoModel.difficulty,
                     sliderValue: $sliderValue,
                     difficulties: getDifficultiesSubset()
                 )
@@ -331,7 +319,7 @@ struct VotesAndSliderView: View {
                     }
                 }
                 .onChange(of: sliderValue) { newValue in
-                    isSliderChanged = newValue != Double(getDifficultiesSubset().firstIndex(of: gradeVote?.grade_vote ?? initialDifficulty) ?? 0)
+                    isSliderChanged = newValue != Double(getDifficultiesSubset().firstIndex(of: gradeVote?.grade_vote ?? boulderInfoModel.difficulty) ?? 0)
                     isChanged = isSliderChanged
                 }
 
@@ -371,14 +359,14 @@ struct VotesAndSliderView: View {
         do {
             let difficulties = getDifficultiesSubset()
 
-            if let fetchedVote = try await DatabaseManager.shared.getGradeVote(boulderID: boulderId, userID: userId) {
+            if let fetchedVote = try await DatabaseManager.shared.getGradeVote(boulderID: boulderInfoModel.boulderID, userID: boulderInfoModel.userID) {
                 gradeVote = fetchedVote
                 if let index = difficulties.firstIndex(of: fetchedVote.grade_vote) {
                     sliderValue = Double(index)
                 }
                 isChanged = true
             } else {
-                if let index = difficulties.firstIndex(of: initialDifficulty) {
+                if let index = difficulties.firstIndex(of: boulderInfoModel.difficulty) {
                     sliderValue = Double(index)
                 }
                 gradeVote = nil
@@ -394,8 +382,8 @@ struct VotesAndSliderView: View {
     func saveOrUpdateVote() async {
         let selectedDifficulty = getCurrentDifficulty()
         let newGradeVote = GradeVote(
-            user_id: userId,
-            boulder_id: boulderId,
+            user_id: boulderInfoModel.userID,
+            boulder_id: boulderInfoModel.boulderID,
             created_at: ISO8601DateFormatter().string(from: Date()),
             grade_vote: selectedDifficulty
         )
@@ -426,7 +414,6 @@ struct VotesAndSliderView: View {
         }
     }
 
-
     private func getCurrentDifficulty() -> String {
         let currentIndex = Int(sliderValue)
         let difficultiesSubset = getDifficultiesSubset()
@@ -434,7 +421,7 @@ struct VotesAndSliderView: View {
     }
 
     private func getDifficultiesSubset() -> [String] {
-        let currentIndex = allDifficulties.firstIndex(of: initialDifficulty) ?? 0
+        let currentIndex = allDifficulties.firstIndex(of: boulderInfoModel.difficulty) ?? 0
         let lowerBound = max(0, currentIndex - 4)
         let upperBound = min(allDifficulties.count - 1, currentIndex + 4)
         
@@ -488,8 +475,6 @@ struct VotesAndSliderView: View {
         boulderInfoModel.votesData = updatedVotesData
     }
 }
-
-
 
 
 
@@ -556,8 +541,10 @@ struct BoulderDifficultySlider: View {
 struct VotesBarChart: View {
     let votesData: [DatabaseManager.AllGradeGroupedVotes]
 
+    // Maksymalna liczba głosów, ustawiona na 1, jeśli brak głosów, by uniknąć dzielenia przez 0
     private var maxVoteCount: Int {
-        votesData.map { $0.votes }.max() ?? 1
+        let maxVotes = votesData.map { $0.votes }.max() ?? 1
+        return maxVotes == 0 ? 1 : maxVotes // Zapewnia, że nie będzie dzielenia przez 0
     }
 
     var body: some View {
@@ -580,6 +567,7 @@ struct VotesBarChart: View {
                                 .fill(Color.gray.opacity(0.2))
                                 .frame(width: 12, height: 110)
 
+                            // Wysokość słupka zależna od liczby głosów, ale minimalna wysokość to 0
                             Capsule()
                                 .fill(
                                     LinearGradient(
@@ -615,9 +603,9 @@ struct VotesBarChart: View {
     }
 }
 
+
 struct RatingSummaryView: View {
     let ratings: [StarVote]
-    @State private var isLoading: Bool = true
     
     var averageRating: Double {
         let totalRating = ratings.reduce(0) { $0 + Double($1.star_vote) }
@@ -634,91 +622,86 @@ struct RatingSummaryView: View {
         }
     }
     
+    // Maksymalna liczba głosów, ustawiona na 1, gdy brak głosów, aby uniknąć dzielenia przez 0
+    private var maxVoteCount: Int {
+        let maxVotes = ratingDistribution.max() ?? 0
+        return maxVotes == 0 ? 1 : maxVotes // Zapewnia, że nie będzie dzielenia przez 0
+    }
+    
     var body: some View {
         VStack(spacing: 20) {
-            if isLoading {
-                ProgressView("Loading...")
-                    .progressViewStyle(CircularProgressViewStyle())
-            } else {
-                HStack {
-                    VStack(alignment: .leading) {
-                        Text("Rating overview")
-                            .font(.system(size: 20, weight: .semibold))
-                        
-                        Text("\(totalVotes) votes in total")
-                            .font(.system(size: 13, weight: .light))
-                            .foregroundColor(.gray)
-                    }
+            HStack {
+                VStack(alignment: .leading) {
+                    Text("Rating overview")
+                        .font(.system(size: 20, weight: .semibold))
                     
-                    Spacer()
-                    
-                    VStack(alignment: .trailing) {
-                        HStack {
-                            Text(String(format: "%.1f", averageRating))
-                                .font(.system(size: 20, weight: .bold))
-                            
-                            Image(systemName: "star.fill")
-                                .foregroundColor(Color("Czerwony"))
-                        }
-                        
-                        Text("in average")
-                            .font(.system(size: 13, weight: .light))
-                            .foregroundColor(.gray)
-                    }
+                    Text("\(totalVotes) votes in total")
+                        .font(.system(size: 13, weight: .light))
+                        .foregroundColor(.gray)
                 }
-                .padding(.leading, 10)
-                .padding(.trailing, 20)
                 
-                VStack(alignment: .leading, spacing: 10) {
-                    ForEach(1...5, id: \.self) { rating in
-                        HStack {
-                            Text("\(rating)")
-                                .frame(width: 20, alignment: .trailing)
-                                .padding(.trailing, 4)
-                            
-                            Image(systemName: "star.fill")
-                                .foregroundColor(Color("Czerwony"))
-                            
-                            GeometryReader { geometry in
-                                let maxVotes = ratingDistribution.max() ?? 1
-                                let width = CGFloat(ratingDistribution[rating - 1]) / CGFloat(maxVotes) * geometry.size.width
-                                
-                                ZStack(alignment: .leading) {
-                                    Rectangle()
-                                        .fill(Color.gray.opacity(0.2))
-                                        .frame(width: geometry.size.width, height: 15)
-                                        .cornerRadius(10)
-                                    
-                                    Rectangle()
-                                        .fill(
-                                            LinearGradient(
-                                                gradient: Gradient(colors: [Color("Fioletowy"), Color("Czerwony")]),
-                                                startPoint: .leading,
-                                                endPoint: .trailing
-                                            )
-                                        )
-                                        .frame(width: width, height: 15)
-                                        .cornerRadius(10)
-                                }
-                            }
-                            .frame(height: 15)
-                            
-                            Text("\(ratingDistribution[rating - 1])")
-                                .font(.subheadline)
-                                .frame(width: 40, alignment: .leading)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                Spacer()
+                
+                VStack(alignment: .trailing) {
+                    HStack {
+                        Text(String(format: "%.1f", averageRating))
+                            .font(.system(size: 20, weight: .bold))
+                        
+                        Image(systemName: "star.fill")
+                            .foregroundColor(Color("Czerwony"))
                     }
+                    
+                    Text("in average")
+                        .font(.system(size: 13, weight: .light))
+                        .foregroundColor(.gray)
+                }
+            }
+            .padding(.leading, 10)
+            .padding(.trailing, 20)
+            
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(1...5, id: \.self) { rating in
+                    HStack {
+                        Text("\(rating)")
+                            .frame(width: 20, alignment: .trailing)
+                            .padding(.trailing, 4)
+                        
+                        Image(systemName: "star.fill")
+                            .foregroundColor(Color("Czerwony"))
+                        
+                        GeometryReader { geometry in
+                            let width = CGFloat(ratingDistribution[rating - 1]) / CGFloat(maxVoteCount) * geometry.size.width
+                            
+                            ZStack(alignment: .leading) {
+                                Rectangle()
+                                    .fill(Color.gray.opacity(0.2))
+                                    .frame(width: geometry.size.width, height: 15)
+                                    .cornerRadius(10)
+                                
+                                Rectangle()
+                                    .fill(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [Color("Fioletowy"), Color("Czerwony")]),
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        )
+                                    )
+                                    .frame(width: width, height: 15)
+                                    .cornerRadius(10)
+                            }
+                        }
+                        .frame(height: 15)
+                        
+                        Text("\(ratingDistribution[rating - 1])")
+                            .font(.subheadline)
+                            .frame(width: 40, alignment: .leading)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
         }
         .padding(.horizontal, 20)
         .padding(.top, 30)
-        .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                isLoading = false
-            }
-        }
     }
 }
 
@@ -744,23 +727,48 @@ struct RatingView: View {
 }
 
 struct RatingSummaryAndRatingView: View {
-    var userId: String
-    var boulderId: Int
+    @ObservedObject var boulderInfoModel: BoulderInfoModel
     
     @State private var selectedRating: Int = 5
     @State private var isChanged: Bool = false
     @State private var starVote: StarVote? = nil
-    @StateObject private var boulderInfoModel: BoulderInfoModel
-    
-    init(userId: String, boulderId: Int) {
-        self.userId = userId
-        self.boulderId = boulderId
-        _boulderInfoModel = StateObject(wrappedValue: BoulderInfoModel(boulderID: boulderId, userID: userId))
+
+    var body: some View {
+        VStack(spacing: 0) {
+            RatingSummaryView(ratings: boulderInfoModel.ratings)
+            
+            RatingView(selectedRating: $selectedRating)
+                .onAppear {
+                    Task {
+                        await fetchStarVote()
+                    }
+                }
+            
+            HStack {
+                Spacer()
+                Button(action: {
+                    Task {
+                        await saveOrUpdateVote()
+                    }
+                }) {
+                    Text(getButtonText())
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(getButtonTextColor())
+                        .padding()
+                        .cornerRadius(8)
+                }
+                .padding(.trailing, 30)
+                .padding(.bottom, 20)
+            }
+            .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+        .background(Color(UIColor.systemGray6))
+        .cornerRadius(12)
     }
     
     func fetchStarVote() async {
         do {
-            if let fetchedVote = try await DatabaseManager.shared.getStarVote(boulderID: boulderId, userID: userId) {
+            if let fetchedVote = try await DatabaseManager.shared.getStarVote(boulderID: boulderInfoModel.boulderID, userID: boulderInfoModel.userID) {
                 starVote = fetchedVote
                 selectedRating = fetchedVote.star_vote
                 isChanged = false
@@ -774,11 +782,10 @@ struct RatingSummaryAndRatingView: View {
         }
     }
     
-
     func saveOrUpdateVote() async {
         let newStarVote = StarVote(
-            user_id: userId,
-            boulder_id: boulderId,
+            user_id: boulderInfoModel.userID,
+            boulder_id: boulderInfoModel.boulderID,
             created_at: ISO8601DateFormatter().string(from: Date()),
             star_vote: selectedRating
         )
@@ -822,39 +829,6 @@ struct RatingSummaryAndRatingView: View {
         } else {
             boulderInfoModel.ratings.append(newVote)
         }
-    }
-    
-    var body: some View {
-        VStack(spacing: 0) {
-            RatingSummaryView(ratings: boulderInfoModel.ratings)
-            
-            RatingView(selectedRating: $selectedRating)
-                .onAppear {
-                    Task {
-                        await fetchStarVote()
-                    }
-                }
-            
-            HStack {
-                Spacer()
-                Button(action: {
-                    Task {
-                        await saveOrUpdateVote()
-                    }
-                }) {
-                    Text(getButtonText())
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(getButtonTextColor())
-                        .padding()
-                        .cornerRadius(8)
-                }
-                .padding(.trailing, 30)
-                .padding(.bottom, 20)
-            }
-            .frame(maxWidth: .infinity, alignment: .trailing)
-        }
-        .background(Color(UIColor.systemGray6))
-        .cornerRadius(12)
     }
     
     private func getButtonText() -> String {
@@ -948,7 +922,5 @@ struct ToppedByTable: View {
         }
     }
 }
-
-
 
 

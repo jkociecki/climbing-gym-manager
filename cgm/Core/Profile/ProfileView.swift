@@ -16,42 +16,43 @@
 import SwiftUI
 import Charts
 
-struct ProfileView: View
-{
-    var userID: String = "08BBCE85-0A59-4500-821D-0A235C7C5AEA"
-    var body: some View
-    {
+struct ProfileView: View {
+    @StateObject var viewModel: ChartsViewModel
+    
+    init(userID: String) {
+        _viewModel = StateObject(wrappedValue: ChartsViewModel(userID: userID))
+    }
+    
+    var body: some View {
         ScrollView {
-            VStack(spacing: 16)
-            {
-                VStack(spacing: 16)
-                {
+            VStack(spacing: 16) {
+                VStack(spacing: 16) {
                     UserProfileHeader(
-                                    userID: userID,
-                                    statsDescription: "stats and progress"
-                                )
-                    DisplayUserStats(userId: userID)
+                        userID: viewModel.userID,
+                        statsDescription: "stats and progress"
+                    )
+                    DisplayUserStats(userId: viewModel.userID)
                 }
                 .padding(.horizontal)
                 
-                VStack(alignment: .leading, spacing: 16)
-                {
+                VStack(alignment: .leading, spacing: 16) {
                     Text("User progress")
                         .font(.system(size: 17, weight: .bold))
                         .padding(.horizontal)
                     
-                    SwitchableViewProfile()
-                    
-                    TopTenBoulders(userID: userID)
-
+                    SwitchableViewProfile(viewModel: viewModel)
+                    TopTenBoulders(userID: viewModel.userID)
                 }
-
             }
             .padding(.vertical)
         }
+        .onAppear {
+            Task {
+                await viewModel.generateChartData()
+            }
+        }
     }
 }
-
 struct StatBox: View
 {
     let title: String
@@ -215,22 +216,19 @@ struct SwitchableButtonProfile: View
     }
 }
 
-struct SwitchableViewProfile: View
-{
+
+struct SwitchableViewProfile: View {
+    var viewModel: ChartsViewModel
     @State private var selectedTab: Tab = .progress
-    enum Tab
-    {
+    
+    enum Tab {
         case progress
         case combined
     }
     
-    
-    var body: some View
-    {
-        VStack
-        {
-            HStack(spacing: -20)
-            {
+    var body: some View {
+        VStack {
+            HStack(spacing: -20) {
                 SwitchableButtonProfile(
                     buttonText: "PROGRESS",
                     isSelected: selectedTab == .progress,
@@ -249,19 +247,18 @@ struct SwitchableViewProfile: View
             }
             .padding(.horizontal)
             
-            if selectedTab == .progress
-            {
-                LineChartView() // <-- Zmieniamy GraphView na LineChartView
-                        .frame(height: 250) // Dostosowanie wysokości wykresu
-                        .padding()
-                        .cornerRadius(15)
-
-            } else if selectedTab == .combined
-            {
-                BarChartView() // <-- Zmieniamy GraphView na LineChartView
-                        .frame(height: 250) // Dostosowanie wysokości wykresu
-                        .padding()
-                        .cornerRadius(15)
+            if selectedTab == .progress {
+                LineChartView(viewModel: viewModel)
+                         .frame(height: 250) // Dostosowanie wysokości wykresu
+                         .padding()
+                         .cornerRadius(15)
+                    .padding()
+                    .cornerRadius(15)
+            } else if selectedTab == .combined {
+                BarChartView(viewModel: viewModel)
+                    .frame(height: 250)
+                    .padding()
+                    .cornerRadius(15)
             }
         }
     }
@@ -395,7 +392,7 @@ struct AvgPointsBox: View
 // Podgląd w trybie projektowania
 struct ProfileView_Previews: PreviewProvider {
     static var previews: some View {
-        ProfileView()
+        ProfileView(userID: "08BBCE85-0A59-4500-821D-0A235C7C5AEA")
     }
 }
 
