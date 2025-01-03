@@ -1,18 +1,33 @@
-//
-//  GymOwnerView.swift
-//  cgm
-//
-//  Created by Jędrzej Kocięcki on 03/01/2025.
-//
-
 import SwiftUI
 
 struct GymOwnerView: View {
+    @State private var isAddBouldersPresented = false
+    @State private var isEditBouldersPresented = false
+    
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        NavigationStack {
+            List {
+                Button(action: {
+                    isAddBouldersPresented = true
+                }) {
+                    Label("Add Boulders", systemImage: "plus.circle")
+                }
+                
+                Button(action: {
+                    isEditBouldersPresented = true
+                }) {
+                    Label("Edit Boulders", systemImage: "pencil.circle")
+                }
+            }
+            .safeAreaInset(edge: .top) {
+                Color.clear.frame(height: 60)
+            }
+            .fullScreenCover(isPresented: $isAddBouldersPresented) {
+                AddBouldersView(isPresented: $isAddBouldersPresented)
+            }
+            .fullScreenCover(isPresented: $isEditBouldersPresented) {
+                selectBoulder(isPresented: $isEditBouldersPresented)
+            }
+        }
     }
-}
-
-#Preview {
-    GymOwnerView()
 }

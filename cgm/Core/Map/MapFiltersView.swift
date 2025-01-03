@@ -13,9 +13,9 @@ let colors = [
     "2DFFDD", "FF1493", "FF4500", "6A0DAD"
 ]
 
-//let sectors = ["Połóg", "Wu", "Diament", "Kaskady", "Piony", "Beczka",
-//"Prawe Zacięcie", "Mały Sześciokąt", "Duży Sześciokąt", "Lewa Grota",
-//"Prawa Grota", "Lewa Grota", "Tył Wieży"]
+let sectors = ["Połóg", "Wu", "Diament", "Kaskady", "Piony", "Beczka",
+"Prawe Zacięcie", "Mały Sześciokąt", "Duży Sześciokąt", "Lewa Grota",
+"Prawa Grota", "Lewa Grota", "Tył Wieży"]
 
 
 struct MapFiltersView: View {

@@ -11,8 +11,9 @@ import SwiftUI
 struct GestureTransformView: UIViewRepresentable {
     @Binding var transform:     CGAffineTransform
     @Binding var paths:         [Sector]
+    @Binding var prevTapPos:    CGPoint
     var onAreaTapped:           ((Int, String) -> Void)?
-    
+    var isTapInteractive:       Bool
     @State private var viewSize: CGSize = .zero
     @State private var initialTransform: CGAffineTransform = .identity
 
@@ -104,21 +105,27 @@ extension GestureTransformView {
         @objc func handleTap(_ gesture: UITapGestureRecognizer) {
             guard let gestureView = gesture.view else { return }
 
-            let location = gesture.location(in: gestureView)
-            let inverseTransform = parent.transform.inverted()
-            let transformedLocation = location.applying(inverseTransform)
-            
-            for (sectorIndex, sector) in parent.paths.enumerated() {
-                if sector.id == "nclick" { continue }
-                for pathWrapper in sector.paths {
-                    
-                    if pathWrapper.path.contains(transformedLocation) {
-                        handleAreaTap(sectorIndex: sectorIndex,
-                                    pathWrapper: pathWrapper,
-                                    gestureView: gestureView)
-                        return
+                let location = gesture.location(in: gestureView)
+                let inverseTransform = parent.transform.inverted()
+                let transformedLocation = location.applying(inverseTransform)
+
+            if parent.isTapInteractive {
+
+                for (sectorIndex, sector) in parent.paths.enumerated() {
+                    if sector.id == "nclick" { continue }
+                    for pathWrapper in sector.paths {
+                        
+                        if pathWrapper.path.contains(transformedLocation) {
+                            handleAreaTap(sectorIndex: sectorIndex,
+                                        pathWrapper: pathWrapper,
+                                        gestureView: gestureView)
+                            return
+                        }
                     }
                 }
+            }
+            else{
+                parent.prevTapPos = transformedLocation
             }
         }
         
@@ -251,12 +258,7 @@ extension GestureTransformView {
             )
         }
         
-        func gestureRecognizer(
-            _ gestureRecognizer: UIGestureRecognizer,
-            shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
-        ) -> Bool {
-            return true
-        }
+
     }
 }
 

@@ -17,7 +17,6 @@ class DatabaseManager {
                             .single()
                             .execute()
                             .value
-        print("current user: ", user)
         return user.id
         
     }
@@ -55,16 +54,30 @@ class DatabaseManager {
         return gymsSectors
     }
     
+    func getGymBoulders(gymID: Int) async throws -> [BoulderD] {
+        let gymsSectors: [BoulderD] = try await client.from("Boulders").select("*").eq("gym_id", value: gymID).execute().value
+        return gymsSectors
+    }
+    
     func getCurrentGymMap() async throws -> String {
         let currentGymId = UserDefaults.standard.string(forKey: "selectedGym")
         let map: GymD = try await client.from("ClimbingGyms").select("*").eq("id", value: currentGymId).single().execute().value
+        return map.mapSectorsSVG
+    }
+
+    func getGymMap(gymID: Int) async throws -> String {
+        let map: GymD = try await client.from("ClimbingGyms").select("*").eq("id", value: gymID).single().execute().value
         return map.mapSectorsSVG
     }
     
     func getCurrentGymSectors() async throws -> [SectorD] {
         let currentGymId = UserDefaults.standard.string(forKey: "selectedGym")
         let sectors: [SectorD] = try await client.from("Sectors").select("*").eq("gymID", value: currentGymId).execute().value
-        print("SEKTORY ", sectors)
+        return sectors
+    }
+    
+    func getGymSectors(id: Int) async throws -> [SectorD] {
+        let sectors: [SectorD] = try await client.from("Sectors").select("*").eq("gymID", value: id).execute().value
         return sectors
     }
     
@@ -382,8 +395,8 @@ class DatabaseManager {
         
         return (flashes, tops)
     }
-
     
+
 }
 
 
@@ -398,6 +411,7 @@ struct User: Encodable, Decodable{
     var name:           String?
     var surname:        String?
     var gender:         Bool?
+    var adminOf:        Int?
 }
 
 struct UserID: Encodable, Decodable{
@@ -414,6 +428,15 @@ struct GymD: Identifiable, Decodable{
 
 struct BoulderD: Identifiable, Decodable, Encodable{
     var id:             Int
+    var diff:           String
+    var color:          String
+    var x:              Float
+    var y:              Float
+    var sector_id:      Int
+    var gym_id:         Int
+}
+
+struct BoulderDUpload:  Decodable, Encodable{
     var diff:           String
     var color:          String
     var x:              Float

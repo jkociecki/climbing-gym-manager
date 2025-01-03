@@ -6,9 +6,8 @@ struct MainView: View {
     @State private var showSideMenu:        Bool = false
     @State private var selectedView:        String = "Home"
     @State private var showFilterPanel:     Bool = false
-    @State private var isAuthenticated: Bool = true  // New state
-
-    @StateObject private var mapViewModel: MapViewModel = MapViewModel()
+    @State private var isAuthenticated:     Bool = true  // New state
+    @StateObject private var mapViewModel: MapViewModel = MapViewModel(isCurrentGym: false)
     @StateObject private var authManager = AuthManager.shared
 
     
@@ -93,19 +92,31 @@ struct MainView: View {
                 }
             )
             
+            
+        case "Gym Owner Panel":
+            return TopBarConfig(
+                title: "Gym Administrator Panel",
+                leftButton: .menuButton(showSideMenu: $showSideMenu)
+            )
+            
+            
         case "Add New":
             return TopBarConfig(
                 title: ( UserDefaults.standard.string(forKey: "selectedGymName") ?? "Gym" ) + " Chat",
-                leftButton: .back {
-                    selectedView = "Home"
-                },
+                leftButton: .menuButton(showSideMenu: $showSideMenu),
                 rightButton: .custom(icon: "square.and.arrow.up") {
                     print("Share tapped")
                 }
             )
             
         default:
-            return TopBarConfig.defaultConfig(title: selectedView, showSideMenu: $showSideMenu)
+            return TopBarConfig(
+                title: "",
+                leftButton: .menuButton(showSideMenu: $showSideMenu),
+                rightButton: .custom(icon: "square.and.arrow.up") {
+                    print("Share tapped")
+                }
+            )
         }
     }
     
@@ -127,6 +138,7 @@ struct TabView: View {
     @Binding var selectedView: String
     @ObservedObject var mapViewModel: MapViewModel
     @StateObject private var authManager = AuthManager.shared
+    @State private var tapPosistion:        CGPoint = CGPoint(x: 0, y: 0)
 
     
     var body: some View {
@@ -134,9 +146,9 @@ struct TabView: View {
             if isTabBarSelection {
                 switch selectedTab {
                 case "house":
-                    MapView(mapViewModel: mapViewModel)
+                    MapView(mapViewModel: mapViewModel, isTapInteractive: true, tapPosistion: $tapPosistion, isEdit: false)
                         .onAppear {
-                            mapViewModel.fetchData()
+                            mapViewModel.fetchData(isCurrentGym: true)
                         }
                 case "chart.bar":
                     RankingView()
@@ -145,7 +157,7 @@ struct TabView: View {
                 case "plus":
                     GymChatView()
                 default:
-                    MapView(mapViewModel: mapViewModel)
+                    MapView(mapViewModel: mapViewModel, isTapInteractive: true, tapPosistion: $tapPosistion, isEdit: false)
                 }
             }
             else {
@@ -162,6 +174,8 @@ struct TabView: View {
                     AddNewView()
                 case "Logout":
                     LogoutHandlerView()
+                case "Gym Owner Panel":
+                    GymOwnerView()
                 default:
                     HomeView()
                 }

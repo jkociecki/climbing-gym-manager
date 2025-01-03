@@ -25,8 +25,8 @@ class MapViewModel: ObservableObject{
 
 
     
-    init() {
-        fetchData()
+    init(isCurrentGym: Bool) {
+        fetchData(isCurrentGym: isCurrentGym)
     }
     
     
@@ -34,12 +34,23 @@ class MapViewModel: ObservableObject{
         selectedSectorIndex = index
     }
     
-    func fetchData() {
+    func fetchData(isCurrentGym: Bool) {
         Task {
             do {
-                let mapResponse:        String = try await DatabaseManager.shared.getCurrentGymMap()
-                let bouldersResponse:   [BoulderD] = try await DatabaseManager.shared.getCurrentGymBoulders()
-                let sectorsResponse:    [SectorD] = try await DatabaseManager.shared.getCurrentGymSectors()
+        
+              let mapResponse: String
+              let bouldersResponse: [BoulderD]
+              let sectorsResponse: [SectorD]
+              
+              if isCurrentGym {
+                  mapResponse = try await DatabaseManager.shared.getCurrentGymMap()
+                  bouldersResponse = try await DatabaseManager.shared.getCurrentGymBoulders()
+                  sectorsResponse = try await DatabaseManager.shared.getCurrentGymSectors()
+              } else {
+                  mapResponse = try await DatabaseManager.shared.getGymMap(gymID: AuthManager.shared.adminOf)
+                  bouldersResponse = try await DatabaseManager.shared.getGymBoulders(gymID: AuthManager.shared.adminOf)
+                  sectorsResponse = try await DatabaseManager.shared.getGymSectors(id: AuthManager.shared.adminOf)
+              }
                 
                 let parser:             SVGConverter = SVGConverter()
                 
@@ -73,10 +84,8 @@ class MapViewModel: ObservableObject{
     private func getToppedBoulders() async throws {
         let userID = try await AuthManager.shared.client.auth.session.user.id
         let response: [ToppedBy] = try await DatabaseManager.shared.getToppedBoulders(forUserID: userID.uuidString)
-        print(response)
         for toppedBoulder in response {
             if let boulderIndex = boulders.firstIndex(where: { $0.id == toppedBoulder.boulder_id }){
-                print("FOUND")
                 boulders[boulderIndex].isDone = toppedBoulder.is_flashed ? FlashDoneNone.Done : FlashDoneNone.Flash
             }
         }

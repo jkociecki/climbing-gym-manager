@@ -35,22 +35,26 @@ struct RankingView: View {
     }
 
     var body: some View {
-        VStack {
-            Spacer(minLength: 100)
+        ScrollView {
+            VStack {
+                Spacer(minLength: 100)
 
 
-            SearchBar(text: $searchText)
+                SearchBar(text: $searchText)
 
-            SelectGenderMikolajKradnieNazwe(selectedGender: $selectedGender)
+                SelectGenderMikolajKradnieNazwe(selectedGender: $selectedGender)
 
-            Divider()
-                .background(Color.gray)
-                .padding(.horizontal)
+                Divider()
+                    .background(Color.gray)
+                    .padding(.horizontal)
 
-            RankingInfo()
+                RankingInfo()
 
-            RankingUsersView(users: filteredUsers, isSearchActive: !searchText.isEmpty)
+                RankingUsersView(users: filteredUsers, isSearchActive: !searchText.isEmpty)
+            }
+            .padding(.vertical, 140)
         }
+        .frame(maxHeight: .infinity)
         .onAppear {
             Task {
                 // Wywołanie asynchronicznej funkcji do generowania rankingu

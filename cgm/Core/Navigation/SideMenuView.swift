@@ -94,6 +94,10 @@ struct SideMenuView: View {
                             MenuItem(icon: "gear", title: "Settings", selectedView: $selectedView)
                             MenuItem(icon: "arrow.right.square", title: "Logout", selectedView: $selectedView)
                         }
+                        
+                        if AuthManager.shared.isAdmin {
+                            MenuItem(icon: "gear", title: "Gym Owner Panel", selectedView: $selectedView)
+                        }
                     }
                     .padding()
                 }

@@ -4,14 +4,19 @@ import SwiftUI
 struct MapView: View {
     @ObservedObject private var mapViewModel: MapViewModel
     @State private var selectedBoulder: Int? = nil
-    
+    var isTapInteractive: Bool
+    var isEdit: Bool
     let defaultScale: CGFloat = 0.5
     let zoomScale: CGFloat = 1.2
     @State var transform: CGAffineTransform
+    @Binding var tapPosition: CGPoint
     
-    init(mapViewModel: MapViewModel) {
+    init(mapViewModel: MapViewModel, isTapInteractive: Bool, tapPosistion: Binding<CGPoint>, isEdit: Bool) {
         _transform = State(initialValue: CGAffineTransform(scaleX: defaultScale, y: defaultScale))
         self.mapViewModel = mapViewModel
+        self.isTapInteractive = isTapInteractive
+        self._tapPosition = tapPosistion
+        self.isEdit = isEdit
     }
     
     var body: some View {
@@ -32,7 +37,9 @@ struct MapView: View {
             .overlay(
                 GestureTransformView(
                     transform: $transform,
-                    paths: $mapViewModel.gymSectors
+                    paths: $mapViewModel.gymSectors,
+                    prevTapPos: $tapPosition,
+                    isTapInteractive: isTapInteractive
                 )
                 .ignoresSafeArea()
             )
@@ -65,7 +72,11 @@ struct MapView: View {
             }
         }
         .sheet(item: $selectedBoulder) { boulderId in
-            BoulderInfoView(viewModel: BoulderInfoModel(boulderID: boulderId, userID: AuthManager.shared.userUID ?? ""), boulders: $mapViewModel.boulders)
+            if isEdit{
+                EditDeleteBoulder(boulderID: boulderId)
+            }else{
+                BoulderInfoView(viewModel: BoulderInfoModel(boulderID: boulderId, userID: AuthManager.shared.userUID ?? ""), boulders: $mapViewModel.boulders)
+            }
 
         }
     }
@@ -114,6 +125,7 @@ struct MapView: View {
             }
         }
     }
+    
     @ViewBuilder
     func getBoulderIcon(isFlased: FlashDoneNone) -> some View {
         switch isFlased {

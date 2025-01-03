@@ -23,46 +23,50 @@ struct SelectGymView: View {
     }
 
     var body: some View {
-        NavigationView {
-            VStack {
-                TextField("Search...", text: $searchText)
-                    .padding(8)
-                    .background(Color.gray.opacity(0.2))
-                    .cornerRadius(8)
-                    .padding(.horizontal)
-                    .padding(.top, 30)
+        ScrollView{
+            NavigationView {
+                VStack {
+                    TextField("Search...", text: $searchText)
+                        .padding(8)
+                        .background(Color.gray.opacity(0.2))
+                        .cornerRadius(8)
+                        .padding(.horizontal)
+                        .padding(.top, 30)
 
-                List(filteredGyms) { gym in
-                    HStack {
+                    List(filteredGyms) { gym in
+                        HStack {
 
-                        SVGView(svgString: gym.logoSVG)
-                            .frame(width: 40, height: 40)
-                            .scaledToFit()
-                            .clipShape(Circle())
+                            SVGView(svgString: gym.logoSVG)
+                                .frame(width: 40, height: 40)
+                                .scaledToFit()
+                                .clipShape(Circle())
 
-                        
-                        VStack(alignment: .leading) {
-                            Text(gym.name)
-                                .font(.headline)
-                            Text(gym.address)
-                                .font(.subheadline)
-                                .foregroundColor(.gray)
-                        }
-                        Spacer()
+                            
+                            VStack(alignment: .leading) {
+                                Text(gym.name)
+                                    .font(.headline)
+                                Text(gym.address)
+                                    .font(.subheadline)
+                                    .foregroundColor(.gray)
+                            }
+                            Spacer()
 
-                        Button(action: {
-                            selectGymModel.selectedGym = gym.id
-                            selectGymModel.storeSelectedGymIntoUserData(gymID: gym.id)
-                        }) {
-                            Image(systemName: selectGymModel.selectedGym == gym.id ? "circle.inset.filled" : "circle")
-                                .foregroundColor(.black)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }.padding(0)
+                            Button(action: {
+                                selectGymModel.selectedGym = gym.id
+                                selectGymModel.storeSelectedGymIntoUserData(gymID: gym.id)
+                            }) {
+                                Image(systemName: selectGymModel.selectedGym == gym.id ? "circle.inset.filled" : "circle")
+                                    .foregroundColor(.black)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }.padding(0)
+                    }
+                    .listStyle(PlainListStyle())
                 }
-                .listStyle(PlainListStyle())
             }
+            .padding(.vertical, 140)
         }
+        .frame(maxHeight: .infinity)
     }
 
     private func toggleFavorite(gym: GymD) {

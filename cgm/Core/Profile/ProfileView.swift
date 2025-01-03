@@ -44,8 +44,9 @@ struct ProfileView: View {
                     TopTenBoulders(userID: viewModel.userID)
                 }
             }
-            .padding(.vertical)
+            .padding(.vertical, 140)
         }
+        .frame(maxHeight: .infinity)
         .onAppear {
             Task {
                 await viewModel.generateChartData()
