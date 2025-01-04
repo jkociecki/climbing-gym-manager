@@ -56,7 +56,7 @@ struct SelectGymView: View {
                                 selectGymModel.storeSelectedGymIntoUserData(gymID: gym.id)
                             }) {
                                 Image(systemName: selectGymModel.selectedGym == gym.id ? "circle.inset.filled" : "circle")
-                                    .foregroundColor(.black)
+                                    .foregroundColor(.fioletowy)
                             }
                             .buttonStyle(PlainButtonStyle())
                         }.padding(0)
