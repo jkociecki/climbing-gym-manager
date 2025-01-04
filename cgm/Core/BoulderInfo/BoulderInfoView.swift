@@ -230,7 +230,7 @@ struct SwitchableButton: View
                 .font(.system(size: 15, weight: .semibold))
                 .padding()
                 .frame(maxWidth: .infinity, maxHeight: 42)
-                .background(isSelected ? Color("Fioletowy") : Color.gray)
+                .background(isSelected ? Color("Fioletowy") :  Color(.secondarySystemBackground))
                 .foregroundColor(isSelected ? .white : .black)
                 .cornerRadius(15)
         }

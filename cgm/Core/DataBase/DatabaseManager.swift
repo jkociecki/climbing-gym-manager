@@ -414,20 +414,6 @@ class DatabaseManager {
     }
     
     
-    func getUserStats(userID: String) async throws -> (flashes: Int, tops: Int) {
-        let data: [ToppedBy] = try await client
-            .from("ToppedBy")
-            .select("*")
-            .eq("user_id", value: userID)
-            .execute()
-            .value
-        
-        let flashes = data.filter { $0.is_flashed }.count
-        let tops = data.count
-        
-        return (flashes, tops)
-    }
-    
     func fetchCurrentGymAboutUs() async throws -> GymInfo {
         guard let currentGymId = UserDefaults.standard.string(forKey: "selectedGym") else {
             throw NSError(domain: "GymError", code: 1, userInfo: [NSLocalizedDescriptionKey: "No gym selected"])
