@@ -37,9 +37,6 @@ struct RankingView: View {
     var body: some View {
         ScrollView {
             VStack {
-                Spacer(minLength: 100)
-
-
                 SearchBar(text: $searchText)
 
                 SelectGenderMikolajKradnieNazwe(selectedGender: $selectedGender)
@@ -203,6 +200,7 @@ struct RankingUsersView: View {
 
 struct RankingView_Previews: PreviewProvider {
     static var previews: some View {
-        RankingView()
+//        RankingView()
+        MainView()
     }
 }

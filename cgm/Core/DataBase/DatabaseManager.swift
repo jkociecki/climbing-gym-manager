@@ -207,10 +207,10 @@ class DatabaseManager {
             .select("*")
             .eq("boulder_id", value: boulderID)
             .eq("user_id", value: userID)
-            .limit(1) // Pobierz maksymalnie jeden rekord
+            .limit(1)
             .execute()
             .value
-        return data.first // Zwróć pierwszy element lub nil, jeśli brak wyników
+        return data.first
     }
     
     func getUser(userID: String) async throws -> User? {

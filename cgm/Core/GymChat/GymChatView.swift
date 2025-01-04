@@ -18,6 +18,7 @@ struct GymChatView: View {
     var body: some View {
 //        NavigationStack {
             ScrollView {
+                Spacer(minLength: 135)
                 LazyVStack(spacing: 16) {
                     ForEach(gymChatModel.posts) { post in
                         PostView(post: post)
@@ -159,6 +160,7 @@ struct PostView: View {
         .padding()
         .background(Color(.systemGray6))
         .cornerRadius(12)
+        
     }
 }
 
@@ -167,6 +169,7 @@ struct PostView: View {
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
-        GymChatView()
+//        GymChatView()
+        MainView()
     }
 }

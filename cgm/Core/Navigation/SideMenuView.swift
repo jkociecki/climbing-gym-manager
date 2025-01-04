@@ -1,9 +1,7 @@
-//
 //  SideMenuView.swift
 //  cgm
 //
 //  Created by Jędrzej Kocięcki on 29/12/2024.
-//
 
 import SwiftUI
 
@@ -11,49 +9,56 @@ struct SideMenuView: View {
     @Binding var showSideMenu: Bool
     @Binding var selectedView: String
     
+    @State private var user: User?
+    @State private var profileImage: Data?
     
     var body: some View {
         HStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 20) {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(spacing: 12) {
-                        Image(systemName: "person.circle.fill")
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 60, height: 60)
-                            .foregroundColor(.gray)
-                            .background(Circle().stroke(LinearGradient(
-                                gradient: Gradient(colors: [.fioletowy, .czerwony]),
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            ), lineWidth: 4))
-                        
+                        if let profileImageData = profileImage, let uiImage = UIImage(data: profileImageData) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 60, height: 60)
+                                .clipShape(Circle())
+                        } else {
+                            Image(systemName: "person.circle.fill")
+                                .resizable()
+                                .scaledToFit() // Również zmienione tutaj
+                                .frame(width: 60, height: 60)
+                                .foregroundColor(.gray)
+                                .background(Circle().stroke(LinearGradient(
+                                    gradient: Gradient(colors: [.fioletowy, .czerwony]),
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                ), lineWidth: 4))
+                        }
+
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("John Doe")
+                            Text("\(user?.name ?? "") \(user?.surname ?? "")")
                                 .font(.custom("Inter18pt-Bold", size: 20))
-                            
-                            Text(verbatim: "jedrzej.kociecki@wp.pl")
+                            Text(verbatim: user?.email ?? "example@example.com")
                                 .foregroundColor(.gray)
                                 .font(.custom("Inter18pt-SemiBold", size: 12))
-
-
-                            HStack{
+                            HStack {
                                 Text("With")
                                     .font(.custom("Inter18pt-Light", size: 12))
                                     .foregroundColor(.gray)
                                 Text("WALL")
                                     .font(.custom("Righteous-Regular", size: 12))
                                     .foregroundColor(.czerwony)
-                                    .frame(width: 32)
+                                    .frame(width: 34)
                                 Text("UP")
                                     .font(.custom("Righteous-Regular", size: 12))
                                     .foregroundColor(.fioletowy)
                                     .frame(width: 16)
-                                Text("since 12 Jan 2024")
+                                Text("since \(user?.created_at != nil ? formattedDate(user!.created_at!, dateFormat: "d MMM yyyy") : "Unknown")")
                                     .font(.custom("Inter18pt-Light", size: 12))
                                     .foregroundColor(.gray)
-                                
-                                
+
+
                             }
                         }
                     }
@@ -64,37 +69,22 @@ struct SideMenuView: View {
                     .padding(.vertical, 10)
                     .frame(height: 2)
                     .foregroundStyle(LinearGradient(colors: [.fioletowy, .czerwony], startPoint: .trailing, endPoint: .leading))
-                    .background(
-                                        LinearGradient(
-                                            gradient: Gradient(colors: [.fioletowy, .czerwony]),
-                                            startPoint: .leading,
-                                            endPoint: .trailing
-                                        ))
-                
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 15) {
-                        MenuGroup(title: "MAIN MENU")
-                            {
+                        MenuGroup(title: "MAIN MENU") {
                             MenuItem(icon: "person.fill", title: "Profile Settings", selectedView: $selectedView)
                             MenuItem(icon: "doc.text.fill", title: "Your Posts", selectedView: $selectedView)
                         }
-                        
-                        Divider()
-                            .padding(.vertical, 10)
-                        
+                        Divider().padding(.vertical, 10)
                         MenuGroup(title: "GYM") {
                             MenuItem(icon: "info.circle.fill", title: "About Gym", selectedView: $selectedView)
                             MenuItem(icon: "map.fill", title: "Switch Gym", selectedView: $selectedView)
                         }
-                        
-                        Divider()
-                            .padding(.vertical, 10)
-                        
+                        Divider().padding(.vertical, 10)
                         MenuGroup(title: "GENERAL") {
                             MenuItem(icon: "gear", title: "Settings", selectedView: $selectedView)
                             MenuItem(icon: "arrow.right.square", title: "Logout", selectedView: $selectedView)
                         }
-                        
                         if AuthManager.shared.isAdmin {
                             MenuItem(icon: "gear", title: "Gym Owner Panel", selectedView: $selectedView)
                         }
@@ -106,7 +96,6 @@ struct SideMenuView: View {
             .background(Color(UIColor.systemBackground))
             .offset(x: showSideMenu ? 0 : -UIScreen.main.bounds.width)
             .animation(.easeInOut(duration: 0.3), value: showSideMenu)
-            
             Spacer()
         }
         .background(
@@ -118,8 +107,23 @@ struct SideMenuView: View {
                     }
                 }
         )
+        .task {
+            await loadUserData()
+        }
     }
+
+    func loadUserData() async {
+        do {
+            user = try await DatabaseManager.shared.getUser(userID: AuthManager.shared.userUID ?? "")
+            profileImage = try await StorageManager.shared.fetchUserProfilePicture(user_uid: AuthManager.shared.userUID ?? "")
+        } catch {
+            print("Error loading user data")
+        }
+    }
+
 }
+
+
 
 struct MenuGroup<Content: View>: View {
     let title: String

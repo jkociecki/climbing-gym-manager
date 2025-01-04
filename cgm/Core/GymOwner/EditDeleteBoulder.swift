@@ -27,13 +27,13 @@ struct selectBoulder: View {
                 .clipShape(RoundedRectangle(cornerRadius: 15))
                 .overlay(
                     RoundedRectangle(cornerRadius: 15)
-                        .stroke(Color.gray, lineWidth: 2) // Opcjonalna ramka wokół mapy
+                        .stroke(Color.gray, lineWidth: 2)
                 )
             }
             .padding(.horizontal)
         }
         .padding(.top, 100)
-        .ignoresSafeArea(edges: .bottom) // Upewnij się, że inne elementy nie przeszkadzają
+        .ignoresSafeArea(edges: .bottom) 
     }
 
 
