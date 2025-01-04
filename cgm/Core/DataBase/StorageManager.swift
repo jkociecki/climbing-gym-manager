@@ -40,6 +40,40 @@ class StorageManager {
 
     }
     
+    func currentGymBackGround() async throws -> Data?{
+        guard let currentGymId = UserDefaults.standard.string(forKey: "selectedGym") else {
+            throw NSError(domain: "GymError", code: 1, userInfo: [NSLocalizedDescriptionKey: "No gym selected"])
+        }
+        
+        do {
+            let path = "\(currentGymId)/background.jpg"
+            let response = try await storage.from("aboutUs")
+                .download(path: path)
+            return response
+            
+        } catch {
+            print("Background photo not found for user. Returning default photo.")
+            return nil
+        }
+    }
+    
+    func currentGymLog() async throws -> Data?{
+        guard let currentGymId = UserDefaults.standard.string(forKey: "selectedGym") else {
+            throw NSError(domain: "GymError", code: 1, userInfo: [NSLocalizedDescriptionKey: "No gym selected"])
+        }
+        
+        do {
+            let path = "\(currentGymId)/logo.png"
+            let response = try await storage.from("aboutUs")
+                .download(path: path)
+            return response
+            
+        } catch {
+            print("Logo photo not found for user. Returning default photo.")
+            return nil
+        }
+    }
+
     func fetchUserProfilePicture(user_uid: String) async throws -> Data?{
         let path = "\(user_uid)/profile_photo.jpg"
         do{

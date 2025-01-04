@@ -1,6 +1,7 @@
 import Foundation
 import Supabase
 import SwiftUI
+import MapKit
 
 class DatabaseManager {
     
@@ -396,6 +397,38 @@ class DatabaseManager {
         return (flashes, tops)
     }
     
+    func fetchCurrentGymAboutUs() async throws -> GymInfo {
+        guard let currentGymId = UserDefaults.standard.string(forKey: "selectedGym") else {
+            throw NSError(domain: "GymError", code: 1, userInfo: [NSLocalizedDescriptionKey: "No gym selected"])
+        }
+        
+        let response: [GymInfo] = try await client.from("AbouGym")
+            .select("*")
+            .eq("id", value: currentGymId)
+            .execute()
+            .value
+        guard let gymInfo = response.first else {
+            throw NSError(domain: "GymError", code: 2, userInfo: [NSLocalizedDescriptionKey: "Gym not found"])
+        }
+        return gymInfo
+    }
+    
+    func getCurrentGymBouldersGroupedBy() async throws -> [groupedBoulders] {
+        guard let currentGymId = UserDefaults.standard.string(forKey: "selectedGym") else {
+            throw NSError(domain: "GymError", code: 1, userInfo: [NSLocalizedDescriptionKey: "No gym selected"])
+        }
+
+        guard let gymId = Int(currentGymId) else {
+            throw NSError(domain: "GymError", code: 2, userInfo: [NSLocalizedDescriptionKey: "Invalid gym ID"])
+        }
+
+        let response: [groupedBoulders] = try await client
+            .rpc("fetch_grouped_boulders", params: ["input_id": gymId])
+            .execute()
+            .value
+        return response
+        print("response \(response)")
+    }
 
 }
 
@@ -494,4 +527,37 @@ struct CommentUpload: Encodable, Decodable {
     var content: String
     var user_id: Int
     var post_id: Int
+}
+
+struct Address {
+    let street:         String
+    let city:           String
+    let postalCode:     String
+    let coordinates:    CLLocationCoordinate2D
+}
+
+
+struct GymInfo: Codable {
+    var name: String
+    var description: String
+    let street: String
+    let city: String
+    let postal_code: String
+    let latitude: Float
+    let longitude: Float
+    let openingHours: OpeningHoursWrapper
+}
+
+struct OpeningHoursWrapper: Codable {
+    let openingHours: [String: DayHours]
+}
+
+struct DayHours: Codable {
+    let open: String
+    let close: String
+}
+
+struct groupedBoulders: Encodable, Decodable {
+    var diff: String
+    var count: Int
 }

@@ -167,7 +167,7 @@ struct TabView: View {
                 case "Your Posts":
                     AddNewView()
                 case "About Gym":
-                    HomeView()
+                    GymInfoView()
                 case "Switch Gym":
                     SelectGymView()
                  case "Settings":
