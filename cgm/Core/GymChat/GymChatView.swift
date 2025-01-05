@@ -10,80 +10,115 @@
 import SwiftUI
 
 struct GymChatView: View {
-    @StateObject private var gymChatModel =     GymChatModel()
-    @State private var selectedPost: Post? =    nil
-//    @State private var showComments =           false
-
+    @StateObject private var gymChatModel = GymChatModel()
+    @State private var selectedPost: Post? = nil
+    @State private var currentUserID: Int? = nil
     
     var body: some View {
-//        NavigationStack {
-            ScrollView {
-                Spacer(minLength: 135)
-                LazyVStack(spacing: 16) {
-                    ForEach(gymChatModel.posts) { post in
-                        PostView(post: post)
-                            .transition(.opacity)
-                            .onTapGesture {
-                                selectedPost = post
-                                //showComments = true
-                            }
-                            .onAppear {
-                                if post.id == gymChatModel.posts.last?.id {
-                                    Task {
-                                        await gymChatModel.loadMorePosts()
-                                    }
-                                }
-                            }
-                    }
-                    
-                    if gymChatModel.isLoading {
-                        if gymChatModel.posts.isEmpty {  // pokazuj loader tylko gdy nie ma jeszcze postów
-                            loadingIndicator
-                                .padding(.top, UIScreen.main.bounds.height / 3)
-                        }
-                    }
-                    
-                    if !gymChatModel.hasMorePosts && !gymChatModel.posts.isEmpty {
-                        endOfContentIndicator
-                    }
+        ScrollView {
+            Spacer(minLength: 135)
+            LazyVStack(spacing: 16) {
+                postsView
+                if gymChatModel.isLoading {
+                    loadingIndicatorView
                 }
-                .padding()
-            }
-            .refreshable {
-                await gymChatModel.refreshPosts()
-            }
-            .onAppear {
-                Task {
-                    await gymChatModel.loadInitialPosts()
+                if !gymChatModel.hasMorePosts && !gymChatModel.posts.isEmpty {
+                    endOfContentIndicatorView
                 }
             }
-            .sheet(item: $selectedPost){ selectedPost in
-                PostCommentsView(post: selectedPost)
-            }
-//            .navigationDestination(isPresented: $showComments) {
-//                if let post = selectedPost {
-//                    PostCommentsView(post: post, showComments: $showComments)
-//                        .navigationBarBackButtonHidden(true)
-//                }
-//            }
-//        }
+            .padding()
+        }
+        .refreshable {
+            await gymChatModel.refreshPosts()
+        }
+        .onAppear {
+            loadInitialPostsAndUserID()
+        }
+        .sheet(item: $selectedPost) { selectedPost in
+            PostCommentsView(post: selectedPost)
+        }
     }
     
-    private var loadingIndicator: some View {
+    private var postsView: some View {
+        ForEach(gymChatModel.posts) { post in
+            postView(post: post)
+                .onAppear {
+                    loadMorePostsIfNeeded(post: post)
+                }
+        }
+    }
+    
+    private func postView(post: Post) -> some View {
+        PostView(post: post)
+            .transition(.opacity)
+            .onTapGesture {
+                selectedPost = post
+            }
+            .onLongPressGesture {
+                if currentUserID == post.user_short_id {
+                    showActionMenu(for: post)
+                }
+
+            }
+    }
+    
+    private var loadingIndicatorView: some View {
         VStack {
             AnimatedLoader(size: 45)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .transition(.opacity)
+        .padding(.top, UIScreen.main.bounds.height / 3)
     }
 
-    private var endOfContentIndicator: some View {
+    private var endOfContentIndicatorView: some View {
         Text("No more posts to load")
             .foregroundColor(.secondary)
             .padding()
             .transition(.opacity)
     }
+
+    private func loadMorePostsIfNeeded(post: Post) {
+        if post.id == gymChatModel.posts.last?.id {
+            Task {
+                await gymChatModel.loadMorePosts()
+            }
+        }
+    }
+
+    private func loadInitialPostsAndUserID() {
+        Task {
+            await gymChatModel.loadInitialPosts()
+            await loadCurrentUserID()
+        }
+    }
+    
+    private func showActionMenu(for post: Post) {
+        let actionSheet = UIAlertController(title: "Manage Post", message: nil, preferredStyle: .actionSheet)
+        actionSheet.addAction(UIAlertAction(title: "Edit", style: .default, handler: { _ in
+            print("Edit post tapped", post.post_id)
+        }))
+        actionSheet.addAction(UIAlertAction(title: "Delete", style: .destructive, handler: { _ in
+            Task {
+                await gymChatModel.deletePost(postId: post.post_id)
+            }
+        }))
+        actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+            windowScene.windows.first?.rootViewController?.present(actionSheet, animated: true)
+        }
+    }
+
+    private func loadCurrentUserID() async {
+        do {
+            currentUserID = try await DatabaseManager.shared.getCurrentUserDataBaseID()
+        } catch {
+            print("Błąd podczas ładowania user_id:", error)
+        }
+    }
 }
+
 
 import SwiftUI
 

@@ -17,6 +17,7 @@ struct Post: Identifiable, Equatable {
     let date:           String
     let content:        String
     let uid:            String
+    let user_short_id:  Int
     let profilePicture: UIImage?
     let commentsCount:  Int
 }
@@ -101,6 +102,7 @@ class GymChatModel: ObservableObject {
                                     date: formatter.string(from: post.created_at),
                                     content: post.text,
                                     uid: userCache[post.user_id] ?? "",
+                                    user_short_id: post.user_id,
                                     profilePicture: profilePicture,
                                     commentsCount: commentsCount
                                 )
@@ -154,6 +156,7 @@ class GymChatModel: ObservableObject {
                         date: formatter.string(from: post.created_at),
                         content: post.text,
                         uid: userCacheUID[post.user_id] ?? "",
+                        user_short_id: post.user_id,
                         profilePicture: profilePicture,
                         commentsCount: commentsCount
                     )
