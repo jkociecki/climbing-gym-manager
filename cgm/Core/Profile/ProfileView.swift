@@ -17,21 +17,24 @@ import SwiftUI
 import Charts
 
 struct ProfileView: View {
-    @StateObject var viewModel: ChartsViewModel
-    
+    @StateObject var chartsViewModel: ChartsViewModel
+    @StateObject var topBouldersViewModel: TopBouldersManager
+    @State private var topBoulders: [TopTenBoulder] = []
+
     init(userID: String) {
-        _viewModel = StateObject(wrappedValue: ChartsViewModel(userID: userID))
+        _chartsViewModel = StateObject(wrappedValue: ChartsViewModel(userID: userID))
+        _topBouldersViewModel = StateObject(wrappedValue: TopBouldersManager(userID: userID))
     }
-    
+
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
                 VStack(spacing: 16) {
                     UserProfileHeader(
-                        userID: viewModel.userID,
+                        userID: chartsViewModel.userID,
                         statsDescription: "stats and progress"
                     )
-                    DisplayUserStats(userId: viewModel.userID)
+                    DisplayUserStats(topBouldersViewModel: topBouldersViewModel)
                 }
                 .padding(.horizontal)
                 
@@ -40,8 +43,9 @@ struct ProfileView: View {
                         .font(.system(size: 17, weight: .bold))
                         .padding(.horizontal)
                     
-                    SwitchableViewProfile(viewModel: viewModel)
-                    TopTenBoulders(userID: viewModel.userID)
+                    SwitchableViewProfile(viewModel: chartsViewModel)
+                    
+                    TopTenBoulders(topBoulders: $topBoulders)  // Pass the topBoulders array as binding
                 }
             }
             .padding(.vertical, 140)
@@ -49,11 +53,21 @@ struct ProfileView: View {
         .frame(maxHeight: .infinity)
         .onAppear {
             Task {
-                await viewModel.generateChartData()
+                await chartsViewModel.generateChartData()
+                await loadTopBoulders()  // Fetch top boulders when the view appears
             }
         }
     }
+    
+    private func loadTopBoulders() async {
+        do {
+            topBoulders = try await topBouldersViewModel.fetchTopTenBoulders()
+        } catch {
+            print("Failed to load top boulders: \(error)")
+        }
+    }
 }
+
 struct StatBox: View
 {
     let title: String
@@ -154,35 +168,45 @@ struct UserProfileHeader: View {
 }
 
 
-
 struct DisplayUserStats: View {
-    var userId: String
+    @ObservedObject var topBouldersViewModel: TopBouldersManager
     @State private var flashes: Int = 0
     @State private var tops: Int = 0
+    @State private var visits: Int = 0  // Track visits
     @State private var accountCreationDate: String? = nil
 
     var body: some View {
         HStack(spacing: 16) {
             StatBox(title: "\(tops) Tops", subtitle: sinceText)
             StatBox(title: "\(flashes) Flashes", subtitle: sinceText)
-            StatBox(title: "81 Visits", subtitle: sinceText)
+            StatBox(title: "\(visits) Visits", subtitle: sinceText)  // Display visits
         }
         .onAppear {
             Task {
-                do {
-                    let user = try await DatabaseManager.shared.getUserDetails(userID: userId)
-                    accountCreationDate = user?.created_at
-                    let stats = try await DatabaseManager.shared.getUserStats(userID: userId)
-                    flashes = stats.flashes
-                    tops = stats.tops
-                } catch {
-                    print("Error fetching data: \(error)")
-                }
+                await loadUserStats()  // Load data when the view appears
             }
         }
     }
-    
 
+    private func loadUserStats() async {
+        do {
+            try await topBouldersViewModel.loadData()
+            
+            let stats = topBouldersViewModel.getUserStats()
+            flashes = stats.flashes
+            tops = stats.tops
+
+            let visitedDates = topBouldersViewModel.fetchVisitedDates()
+            visits = visitedDates.count
+
+            let user = try await DatabaseManager.shared.getUserDetails(userID: topBouldersViewModel.userID)
+            accountCreationDate = user?.created_at
+
+        } catch {
+            print("Error loading user stats: \(error)")
+        }
+    }
+    
     private var sinceText: String {
         if let date = accountCreationDate {
             return "since \(formattedDate(date, dateFormat: "MMM yyyy"))"
@@ -190,10 +214,7 @@ struct DisplayUserStats: View {
             return ""
         }
     }
-
 }
-
-
 
 struct SwitchableButtonProfile: View
 {
@@ -250,7 +271,7 @@ struct SwitchableViewProfile: View {
             
             if selectedTab == .progress {
                 LineChartView(viewModel: viewModel)
-                         .frame(height: 250) // Dostosowanie wysokości wykresu
+                         .frame(height: 250)
                          .padding()
                          .cornerRadius(15)
                     .padding()
@@ -265,16 +286,10 @@ struct SwitchableViewProfile: View {
     }
 }
 
-//struct ProgressSummaryView: View
-//{
-//    var body: some View
-//    {}
-//}
 
 
 struct TopTenBoulders: View {
-    var userID: String
-    @State private var boulders: [TopTenBoulder] = []
+    @Binding var topBoulders: [TopTenBoulder]  // Use a binding to receive data
     @State private var isLoading = true
 
     var body: some View {
@@ -297,8 +312,8 @@ struct TopTenBoulders: View {
                     AvgPointsBox(title: "\(calculateAvgPoints())", subtitle: "points in average")
                 }
                 
-                ForEach(boulders.indices, id: \.self) { index in
-                    let boulder = boulders[index]
+                ForEach(topBoulders.indices, id: \.self) { index in
+                    let boulder = topBoulders[index]
                     HStack {
                         Text("\(index + 1)")
                             .font(.system(size: 20, weight: .semibold))
@@ -329,25 +344,18 @@ struct TopTenBoulders: View {
             }
         }
         .onAppear {
-            Task {
-                do {
-                    let manager = TopBouldersManager()
-                    boulders = try await manager.fetchTopTenBoulders(for: userID)
-                } catch {
-                    print("Failed to load boulders: \(error)")
-                }
-                isLoading = false
-            }
+            isLoading = false  // Data is assumed to be loaded once the view appears
         }
         .padding(.horizontal, 16)
     }
     
     private func calculateAvgPoints() -> Int {
-        guard !boulders.isEmpty else { return 0 }
-        let totalPoints = boulders.reduce(0) { $0 + $1.pointsForBoulder }
-        return totalPoints / boulders.count
+        guard !topBoulders.isEmpty else { return 0 }
+        let totalPoints = topBoulders.reduce(0) { $0 + $1.pointsForBoulder }
+        return totalPoints / topBoulders.count
     }
 }
+
 
 
 struct AvgPointsBox: View
@@ -357,22 +365,6 @@ struct AvgPointsBox: View
     
     var body: some View
     {
-        
-//        VStack {
-//            Text(title)
-//                .font(.system(size: 20, weight: .bold))
-//                .foregroundColor(Color.white)
-//
-//            Text(subtitle)
-//                .font(.system(size: 10, weight: .light))
-//                .foregroundColor(Color.white)
-//        }
-//        .frame(maxWidth: 115, minHeight: 53)
-//        .background(Color(hex: "FE4851"))
-//        .cornerRadius(15)
-//        .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
-//
-//    }
         VStack {
             Text(title)
                 .font(.system(size: 20, weight: .bold))
@@ -390,10 +382,9 @@ struct AvgPointsBox: View
     }
 }
 
-// Podgląd w trybie projektowania
 struct ProfileView_Previews: PreviewProvider {
     static var previews: some View {
-        ProfileView(userID: "08BBCE85-0A59-4500-821D-0A235C7C5AEA")
+        ProfileView(userID: "A42FC0DC-FF3A-40B7-99E0-66DA9AC67220")
     }
 }
 

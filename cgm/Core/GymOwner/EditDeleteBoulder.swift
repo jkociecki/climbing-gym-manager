@@ -52,11 +52,8 @@ struct EditDeleteBoulder: View {
     @State private var isShowingMap = false
     @State private var tapPosition: CGPoint = CGPoint(x: 0, y: 0)
 
-
-
-
     var body: some View {
-        Group {
+        VStack {
             if isLoading {
                 ProgressView()
                     .zIndex(10)
@@ -69,7 +66,7 @@ struct EditDeleteBoulder: View {
                                 .fill(Color(hex: boulder.color))
                                 .frame(width: 40, height: 40)
                                 .shadow(radius: 2)
-                            
+
                             VStack(alignment: .leading) {
                                 Text("Difficulty")
                                     .font(.subheadline)
@@ -85,17 +82,49 @@ struct EditDeleteBoulder: View {
                                 .fill(Color(.systemBackground))
                                 .shadow(radius: 5)
                         )
-                        
+
                         DifficultySelectionView(difficulty: $difficulty)
                         ColorSelectionView(selectedColor: $selectedColor)
                         SectorSelectionView(sector: $sector, selectedSectorID: $selectedSectorID, sectors: sectors)
                         LocationSelectionView(isShowingMap: $isShowingMap, tapPosition: $tapPosition)
+
                         Button("Edit Boulder") {
+                            Task {
+                                do {
+                                    print(difficulty, selectedColor, selectedSectorID, tapPosition)
+                                    var updatedBoulder = boulder
+                                    if let newColor = selectedColor, !newColor.isEmpty, newColor != boulder.color {
+                                        updatedBoulder.color = newColor
+                                    }
+                                    if !difficulty.isEmpty, difficulty != boulder.diff {
+                                        updatedBoulder.diff = difficulty
+                                    }
+                                    if let newSectorID = selectedSectorID, newSectorID != boulder.sector_id {
+                                        updatedBoulder.sector_id = newSectorID
+                                    }
+                                    if tapPosition != CGPoint(x: 0, y: 0) {
+                                        updatedBoulder.x = Float(tapPosition.x)
+                                        updatedBoulder.y = Float(tapPosition.y)
+                                    }
+
+                                    try await DatabaseManager.shared.updateBoulder(boulder: updatedBoulder)
+                                    print("Boulder successfully updated.")
+                                } catch {
+                                    print("Error updating boulder: \(error.localizedDescription)")
+                                }
+                            }
                         }
+
                         Button("Delete Boulder") {
+                            Task {
+                                do {
+                                    try await DatabaseManager.shared.deleteBoulderWithIsActive(boulderID: boulderID)
+                                    print("Boulder successfully deleted.")
+                                } catch {
+                                    print("Error deleting boulder: \(error.localizedDescription)")
+                                }
+                            }
                         }
-
-
 
                     }
                 }
@@ -120,13 +149,11 @@ struct EditDeleteBoulder: View {
                 difficulty: $difficulty
             )
         }
-
     }
-    
+
     func fetchSectors() {
         Task {
             do {
-                //HERE
                 let res = try await DatabaseManager.shared.getGymSectors(id: AuthManager.shared.adminOf)
                 DispatchQueue.main.async {
                     self.sectors = res
@@ -136,7 +163,7 @@ struct EditDeleteBoulder: View {
             }
         }
     }
-    
+
     private func loadBoulderData() async {
         do {
             if let fetchedBoulder = try await DatabaseManager.shared.getBoulderByID(boulderID: boulderID) {
@@ -150,7 +177,3 @@ struct EditDeleteBoulder: View {
         isLoading = false
     }
 }
-
-
-
-

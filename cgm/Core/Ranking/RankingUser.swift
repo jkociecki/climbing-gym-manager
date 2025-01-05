@@ -1,44 +1,5 @@
 import Foundation
 
-// Struktura poziomów trudności i punktów
-let levels = [
-    ("Beginner", 0),
-    ("4A", 100),
-    ("4B", 150),
-    ("4C", 200),
-    ("5A", 250),
-    ("5A+", 300),
-    ("5B", 350),
-    ("5C", 400),
-    ("6A", 450),
-    ("6A+", 500),
-    ("6B", 550),
-    ("6B+", 600),
-    ("6C", 650),
-    ("6C+", 700),
-    ("7A", 750),
-    ("7A+", 800),
-    ("7B", 850),
-    ("7B+", 900),
-    ("7C", 950),
-    ("7C+", 1000),
-    ("8A", 1100),
-    ("8A+", 1200),
-    ("8B", 1300),
-    ("8B+", 1400),
-    ("8C", 1500),
-    ("8C+", 1600),
-    ("9A", 1700),
-    ("9A+", 1800),
-    ("9B", 1900),
-    ("9B+", 2000),
-    ("9C", 2100),
-    ("9C+", 2200)
-]
- 
-
-import Foundation
-
 struct RankingUser: Identifiable {
     var id = UUID()
     var name: String
@@ -49,12 +10,6 @@ struct RankingUser: Identifiable {
     var imageData: Data?
 }
 
-func calculatePointsForBoulder(difficulty: String, isFlashed: Bool) -> Int {
-    // Get points for the given difficulty level
-    let difficultyPoints = levels.first(where: { $0.0 == difficulty })?.1 ?? 0
-    let flashBonus = isFlashed ? Int(Double(difficultyPoints) * 0.2) : 0
-    return Int(Double(difficultyPoints + flashBonus) * 0.1)
-}
 
 class RankingManager {
     let db = DatabaseManager.shared
@@ -65,7 +20,6 @@ class RankingManager {
         let calendar = Calendar.current
         let dateCutoff = calendar.date(byAdding: .month, value: -2, to: Date()) ?? Date()
         
-        // Filter topped boulders from the last 2 months
         let recentToppedBoulders = toppedBoulders.filter { topped in
             guard let createdAtString = topped.created_at,
                   let createdAt = ISO8601DateFormatter().date(from: createdAtString) else {
@@ -74,7 +28,6 @@ class RankingManager {
             return createdAt >= dateCutoff
         }
 
-        // Sort boulders by difficulty
         let sortedBoulders = recentToppedBoulders.compactMap { topped -> (ToppedBy, BoulderD)? in
             if let boulder = boulders.first(where: { $0.id == topped.boulder_id }) {
                 return (topped, boulder)
@@ -122,15 +75,16 @@ class RankingManager {
 
 
     func generateRanking() async throws -> [RankingUser] {
-        print("start")
         guard let idString = UserDefaults.standard.string(forKey: "selectedGym"),
               let gymID = Int(idString) else {
             throw NSError(domain: "InvalidGymID", code: 0, userInfo: [NSLocalizedDescriptionKey: "Gym ID is not set or invalid."])
         }
-
+        
+        print("1")
         let users = try await db.client.from("Users").select("*").execute().value as [User]
         let toppedBoulders = try await db.client.from("ToppedBy").select("*").execute().value as [ToppedBy]
         let boulders = try await db.client.from("Boulders").select("*").execute().value as [BoulderD]
+
 
 
         let gymBoulders = boulders.filter { $0.gym_id == gymID }
@@ -142,13 +96,10 @@ class RankingManager {
         let gymUsers = users.filter { user in
             return gymToppedBoulders.contains { $0.user_id == user.uid.uuidString }
         }
-        print("pobrane wszystkie dane")
 
         var rankingUsers: [RankingUser] = []
 
         for user in gymUsers {
-            print("kolejny user")
-            // Get the topped boulders for the current user
             let userBoulders = gymToppedBoulders.filter { $0.user_id == user.uid.uuidString }
             
             let points = calculatePoints(toppedBoulders: userBoulders, boulders: gymBoulders)
@@ -156,7 +107,6 @@ class RankingManager {
             let (level, progress) = determineLevel(points: points)
 
             let imageData = try? await StorageManager.shared.fetchUserProfilePicture(user_uid: user.uid.uuidString)
-  
             let rankingUser = RankingUser(
                 name: "\(user.name ?? "") \(user.surname ?? "")",
                 points: points,
@@ -168,8 +118,7 @@ class RankingManager {
             
             rankingUsers.append(rankingUser)
         }
-        print("koniec")
-        
+
         // Sort the ranking users by points in descending order
         return rankingUsers.sorted(by: { $0.points > $1.points })
     }

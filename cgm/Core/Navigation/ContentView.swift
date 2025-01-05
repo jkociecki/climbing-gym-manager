@@ -266,7 +266,7 @@ struct LogoutHandlerView: View {
         isLoggingOut = true
         do {
             try await authManager.logOut()
-            await authManager.checkAuth() // This will set isAuthenticated to false
+            await authManager.checkAuth() 
         } catch {
             errorMessage = error.localizedDescription
             showError = true

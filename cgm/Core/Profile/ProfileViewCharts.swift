@@ -137,8 +137,6 @@ class ChartsViewModel: ObservableObject {
     }
 }
 
-// MARK: - CombinedChartsView
-
 
 struct LineChartView: View {
     @StateObject var viewModel: ChartsViewModel
@@ -147,39 +145,51 @@ struct LineChartView: View {
         ZStack {
             RoundedRectangle(cornerRadius: 15)
                 .fill(Color(.secondarySystemBackground))
-            Chart {
-                ForEach(viewModel.lineChartData) { item in
-                    LineMark(
-                        x: .value("Month", item.month),
-                        y: .value("Points", item.difficulty)
-                    )
-                    .interpolationMethod(.catmullRom)
-                    .symbol {
-                        Circle()
-                            .fill(Color("Czerwony"))
-                            .frame(width: 0.1, height: 8)
-                    }
-                    .foregroundStyle(
-                        LinearGradient(
-                            gradient: Gradient(colors: [Color("Fioletowy"), Color("Czerwony")]),
-                            startPoint: .leading,
-                            endPoint: .trailing
+            
+            if viewModel.lineChartData.isEmpty {
+                // Show "No Data Available" when there's no data
+                Text("No Data Available")
+                    .foregroundColor(.gray)
+                    .font(.title3)
+                    .bold()
+                    .opacity(0.6)
+                    .padding()
+            } else {
+                // Chart with data
+                Chart {
+                    ForEach(viewModel.lineChartData) { item in
+                        LineMark(
+                            x: .value("Month", item.month),
+                            y: .value("Points", item.difficulty)
                         )
-                    )
-                }
-            }
-            .chartYAxis {
-                AxisMarks(values: [viewModel.minY, viewModel.maxY]) { value in
-                    AxisValueLabel {
-                        Text("\(value.as(Double.self) ?? 0, specifier: "%0.f")")
+                        .interpolationMethod(.catmullRom)
+                        .symbol {
+                            Circle()
+                                .fill(Color("Czerwony"))
+                                .frame(width: 0.1, height: 8)
+                        }
+                        .foregroundStyle(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color("Fioletowy"), Color("Czerwony")]),
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
                     }
                 }
+                .chartYAxis {
+                    AxisMarks(values: [viewModel.minY, viewModel.maxY]) { value in
+                        AxisValueLabel {
+                            Text("\(value.as(Double.self) ?? 0, specifier: "%0.f")")
+                        }
+                    }
+                }
+                .chartYScale(domain: viewModel.minY...viewModel.maxY)
+                .chartXAxis {
+                    AxisMarks(values: .automatic)
+                }
+                .frame(height: 200)
             }
-            .chartYScale(domain: viewModel.minY...viewModel.maxY)
-            .chartXAxis {
-                AxisMarks(values: .automatic)
-            }
-            .frame(height: 200)
         }
         .onAppear {
             Task {
@@ -189,6 +199,8 @@ struct LineChartView: View {
     }
 }
 
+
+// MARK: - BarChartView
 
 struct BarChartView: View {
     @StateObject var viewModel: ChartsViewModel
@@ -200,9 +212,15 @@ struct BarChartView: View {
             
             VStack {
                 if viewModel.barChartData.isEmpty {
-                    Text("Loading data...")
+                    // Show "No Data Available" message when no bar data
+                    Text("No Data Available")
                         .foregroundColor(.gray)
+                        .font(.title3)
+                        .bold()
+                        .opacity(0.6)
+                        .padding()
                 } else {
+                    // Chart with data
                     Chart(viewModel.barChartData.map { $0.difficulty }, id: \.self) { key in
                         BarMark(
                             x: .value("Grade", key),
@@ -236,4 +254,3 @@ struct BarChartView: View {
         }
     }
 }
-

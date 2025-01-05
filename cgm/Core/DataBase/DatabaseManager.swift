@@ -115,7 +115,6 @@ class DatabaseManager {
     }
 
     func getCommentsCountForPosts(postIds: [Int]) async throws -> [Int: Int] {
-        print("A")
         let comments: [PostCommentsCount] = try await client
             .from("Comments")
             .select("post_id")
@@ -149,7 +148,6 @@ class DatabaseManager {
 
 
     func getBoulderStarVotes(boulderID: Int) async throws -> [StarVote] {
-
         let votes: [StarVote] = try await client
             .from("StarVotes")
             .select("*")
@@ -265,6 +263,39 @@ class DatabaseManager {
             .execute()
         print("Deleted response: \(response.data)")
     }
+    
+    func deleteBoulderWithIsActive(boulderID: Int) async throws {
+        do {
+            // Pobieranie istniejącego obiektu boulder
+            if var boulder = try await DatabaseManager.shared.getBoulderByID(boulderID: boulderID) {
+                // Ustawienie is_active na false
+                boulder.is_active = false
+                
+                // Aktualizacja bouldera w bazie danych
+                try await DatabaseManager.shared.client
+                    .from("Boulders")
+                    .update(boulder)
+                    .eq("id", value: boulderID)
+                    .execute()
+                
+                print("Boulder został dezaktywowany.")
+            } else {
+                print("Boulder nie znaleziony.")
+            }
+        } catch {
+            print("Błąd podczas dezaktywacji bouldera: \(error.localizedDescription)")
+            throw error
+        }
+    }
+    
+    func updateBoulder(boulder: BoulderD) async throws {
+        let response = try await client
+            .from("Boulders")
+            .upsert(boulder)
+            .execute()
+        print("Updated response: \(response.data)")
+    }
+
     
 
 
@@ -383,20 +414,6 @@ class DatabaseManager {
     }
     
     
-    func getUserStats(userID: String) async throws -> (flashes: Int, tops: Int) {
-        let data: [ToppedBy] = try await client
-            .from("ToppedBy")
-            .select("*")
-            .eq("user_id", value: userID)
-            .execute()
-            .value
-        
-        let flashes = data.filter { $0.is_flashed }.count
-        let tops = data.count
-        
-        return (flashes, tops)
-    }
-    
     func fetchCurrentGymAboutUs() async throws -> GymInfo {
         guard let currentGymId = UserDefaults.standard.string(forKey: "selectedGym") else {
             throw NSError(domain: "GymError", code: 1, userInfo: [NSLocalizedDescriptionKey: "No gym selected"])
@@ -467,6 +484,7 @@ struct BoulderD: Identifiable, Decodable, Encodable{
     var y:              Float
     var sector_id:      Int
     var gym_id:         Int
+    var is_active:      Bool?
 }
 
 struct BoulderDUpload:  Decodable, Encodable{
