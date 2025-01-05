@@ -175,6 +175,15 @@ class DatabaseManager {
             .execute()
     }
     
+    
+    func updatePostComment(comment: CommentUpload) async throws {
+        let response = try await client
+            .from("Comments")
+            .upsert(comment)
+            .execute()
+        print("Updated response: \(response.data)")
+    }
+    
     func updateStarVote(starVote: StarVote) async throws {
         let response = try await client
             .from("StarVotes")
@@ -182,6 +191,9 @@ class DatabaseManager {
             .execute()
         print("Updated response: \(response.data)")
     }
+    
+
+
     
     func updateGradeVote(gradeVote: GradeVote) async throws {
         let response = try await client
@@ -242,6 +254,26 @@ class DatabaseManager {
             .eq("user_id", value: userID)
             .execute()
         print("Deleted response: \(response.data)")
+    }
+    
+    func deletePost(postId: Int) async throws {
+        let response = try await client
+            .from("Posts") // Zakładam, że masz tabelę "Posts"
+            .delete()
+            .eq("post_id", value: postId)
+            .execute()
+        
+        print("Post deleted: \(response.data)")
+    }
+    
+    func deleteComment(commentId: Int) async throws {
+        let response = try await client
+            .from("Comments") // Zakładam, że masz tabelę "Posts"
+            .delete()
+            .eq("comment_id", value: commentId)
+            .execute()
+        
+        print("Comment deleted: \(response.data)")
     }
     
     func deleteStarVote(boulderID: Int, userID: String) async throws {
@@ -391,6 +423,24 @@ class DatabaseManager {
         
         return posts
     }
+    
+    func getPaginatedPostsForUser(uid: String, page: Int) async throws -> [PostsD] {
+        let pageSize = 10
+        let start = (page - 1) * pageSize
+        
+        let posts: [PostsD] = try await client
+            .from("Posts")
+            .select("*")
+            .eq("user_id", value: uid)
+            .range(from: start, to: start + (pageSize - 1))
+            .order("post_id", ascending: false)
+            .execute()
+            .value
+        
+        return posts
+    }
+
+    
     func getUserDetails(userID: String) async throws -> User? {
         let data: [User] = try await client
             .from("Users")
@@ -402,6 +452,16 @@ class DatabaseManager {
         return data.first
     }
     
+    func getUserByID(userID: String) async throws -> User? {
+        let data: [User] = try await client
+            .from("Users")
+            .select("*")
+            .eq("uid", value: userID)
+            .limit(1)
+            .execute()
+            .value
+        return data.first
+    }
     
     func getToppedBoulders(forUserID userID: String) async throws -> [ToppedBy] {
         let toppedBoulders = try await client

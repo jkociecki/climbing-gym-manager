@@ -81,7 +81,6 @@ class StorageManager {
                                         .download(path: path)
             return response
         }catch{
-            print("Profile photo not found for user \(user_uid). Returning default photo.")
             return nil
         }
     }

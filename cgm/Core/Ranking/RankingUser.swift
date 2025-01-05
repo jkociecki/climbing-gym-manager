@@ -108,7 +108,7 @@ class RankingManager {
 
             let imageData = try? await StorageManager.shared.fetchUserProfilePicture(user_uid: user.uid.uuidString)
             let rankingUser = RankingUser(
-                name: "\(user.name ?? "") \(user.surname ?? "")",
+                name: (user.name?.isEmpty ?? true) && (user.surname?.isEmpty ?? true) ? "Anonymous" : "\(user.name ?? "") \(user.surname ?? "")",
                 points: points,
                 gender: user.gender == nil ? "N/A" : (user.gender == true ? "M" : "K"),
                 level: level,

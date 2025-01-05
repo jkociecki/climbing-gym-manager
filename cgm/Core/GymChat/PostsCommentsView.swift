@@ -6,6 +6,8 @@
 //
 
 import SwiftUI
+
+
 struct PostCommentsView: View {
     @State var post: Post
     @State private var commentContent: String = ""
@@ -13,12 +15,18 @@ struct PostCommentsView: View {
     @State private var userCache: [Int: String] = [:]
     @State private var userProfilePicturesCache: [Int: UIImage] = [:]
     
+    @State private var showActionSheet: Bool = false
+    @State private var selectedComment: CommentsD? = nil // Wybrany komentarz
+    
+    // Zmienna przechowująca aktualne user_id
+    @State private var currentUserID: Int? = nil
+
     private func loadUserNames() async {
         for comment in comments {
             if let userData = try? await DatabaseManager.shared.getUserOverID(userID: String(comment.user_id)) {
                 let fullName = (userData.name ?? "Anonymous") + " " + (userData.surname ?? "")
                 userCache[comment.user_id] = fullName
-                
+
                 Task {
                     do {
                         if let imgData = try? await StorageManager.shared.fetchUserProfilePicture(user_uid: userData.uid.uuidString) {
@@ -52,6 +60,15 @@ struct PostCommentsView: View {
         }
     }
     
+    // Funkcja, która pobiera user_id aktualnie zalogowanego użytkownika
+    private func loadCurrentUserID() async {
+        do {
+            currentUserID = try await DatabaseManager.shared.getCurrentUserDataBaseID()
+        } catch {
+            print("Błąd podczas ładowania user_id:", error)
+        }
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
@@ -67,19 +84,17 @@ struct PostCommentsView: View {
                                                         endPoint: .trailing
                                                     ), lineWidth: 4))
 
-                    
                     VStack(alignment: .leading, spacing: 4) {
                         Text(post.userName)
                             .font(.custom("Inter18pt-Regular", size: 15))
                         
-                        Text(post.date)
+                        Text(formatDate2(post.date))
                             .font(.custom("Inter18pt-Light", size: 12))
                             .foregroundColor(.gray)
-                            
                     }
                     Spacer()
                     
-                    Text("5 min ago")
+                    Text(timeAgo(from: post.date))
                         .font(.custom("Inter18pt-Light", size: 12))
                         .foregroundColor(.gray)
                 }
@@ -103,6 +118,12 @@ struct PostCommentsView: View {
                 ForEach(comments, id: \.comment_id) { comment in
                     let profileImage = userProfilePicturesCache[comment.user_id] ?? UIImage(named: "default_avatar")!
                     CommentView(image: profileImage, nickname: userCache[comment.user_id] ?? "Anonymous", content: comment.content, timestamp: comment.created_at)
+                        .onLongPressGesture {
+                            if comment.user_id == currentUserID {
+                                selectedComment = comment
+                                showActionSheet = true
+                            }
+                        }
                 }
             }
             .frame(maxHeight: .infinity)
@@ -132,6 +153,26 @@ struct PostCommentsView: View {
         .task {
             await fetchComments()
             await loadUserNames()
+            await loadCurrentUserID() // Ładujemy aktualnego usera
+        }
+        .actionSheet(isPresented: $showActionSheet) {
+            ActionSheet(
+                title: Text("Manage Comment"),
+                message: nil,
+                buttons: [
+                    .default(Text("Edit")) {
+                        if let comment = selectedComment {
+                            print("Edit clicked for comment with ID: \(comment.comment_id)")
+                        }
+                    },
+                    .destructive(Text("Delete")) {
+                        if let comment = selectedComment {
+                            print("Delete clicked for comment with ID: \(comment.comment_id)")
+                        }
+                    },
+                    .cancel()
+                ]
+            )
         }
     }
 }
@@ -165,7 +206,6 @@ struct CommentView: View {
                     .font(.custom("Inter18pt-Regular", size: 12))
                     .lineLimit(nil)
                     .lineSpacing(2)
-
             }
             .padding()
             .background(
@@ -176,4 +216,10 @@ struct CommentView: View {
             .padding(.top, 10)
         }
     }
+}
+
+
+
+#Preview {
+    MainView()
 }

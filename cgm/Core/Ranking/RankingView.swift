@@ -62,12 +62,10 @@ struct RankingView: View {
         .onAppear {
             Task {
                 do {
-                    // Show loading indicator
                     isLoading = true
                     
                     rankingUsersData = try await RankingManager().generateRanking()
                     
-                    // Hide loading indicator once data is fetched
                     isLoading = false
                 } catch {
                     print("Błąd ładowania rankingu: \(error)")

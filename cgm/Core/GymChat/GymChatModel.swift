@@ -81,6 +81,8 @@ class GymChatModel: ObservableObject {
                 if newPosts.isEmpty {
                     hasMorePosts = false
                 } else {
+                    await loadUserNames(for: newPosts) 
+                    
                     let postIds = newPosts.map { $0.post_id }
                     let commentsCountDict = try await DatabaseManager.shared.getCommentsCountForPosts(postIds: postIds)
                     
@@ -117,6 +119,52 @@ class GymChatModel: ObservableObject {
             }
         }
     }
+    
+    @MainActor
+    func loadPostsForUser(userID: String) async {
+        guard !isLoading else { return }
+
+        isLoading = true
+        currentPage = 1
+        posts = []
+        hasMorePosts = true
+        defer { isLoading = false }
+        
+        do {
+            let newPosts = try await DatabaseManager.shared.getPaginatedPostsForUser(uid: userID, page: currentPage)
+            
+            if newPosts.isEmpty {
+                hasMorePosts = false
+            } else {
+                await loadUserNames(for: newPosts)
+                
+                let postIds = newPosts.map { $0.post_id }
+                let commentsCountDict = try await DatabaseManager.shared.getCommentsCountForPosts(postIds: postIds)
+                
+                posts = newPosts.map { post in
+                    let userImage = userProfilePictureCache[post.user_id] != nil ? "profile_picture_\(post.user_id)" : "default_avatar"
+                    let profilePicture = userProfilePictureCache[post.user_id].flatMap { UIImage(data: $0) } ?? UIImage(named: "default_avatar")
+                    
+                    let commentsCount = commentsCountDict[post.post_id] ?? 0
+                    
+                    return Post(
+                        post_id: post.post_id,
+                        userName: userCache[post.user_id] ?? "Anonymous",
+                        userImage: userImage,
+                        date: formatter.string(from: post.created_at),
+                        content: post.text,
+                        uid: userCacheUID[post.user_id] ?? "",
+                        profilePicture: profilePicture,
+                        commentsCount: commentsCount
+                    )
+                }
+                currentPage += 1
+            }
+        } catch {
+            print("Error loading posts for user \(userID): \(error)")
+            hasMorePosts = false
+        }
+    }
 
 
     private func loadUserNames(for posts: [PostsD]) async {
@@ -144,5 +192,19 @@ class GymChatModel: ObservableObject {
     func loadUserProfilePictureOverUID(uid: String) async throws -> Data? {
         let img = try await StorageManager.shared.fetchUserProfilePicture(user_uid: uid)
         return img
+    }
+    
+    func deletePost(postId: Int) async {
+        // Zakładamy, że masz już metodę do usuwania postów z bazy danych
+        do {
+            try await DatabaseManager.shared.deletePost(postId: postId)
+            
+            // Usuwamy post z lokalnej listy postów
+            if let index = posts.firstIndex(where: { $0.post_id == postId }) {
+                posts.remove(at: index)
+            }
+        } catch {
+            print("Error deleting post: \(error)")
+        }
     }
 }
