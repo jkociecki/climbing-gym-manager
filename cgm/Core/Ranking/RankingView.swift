@@ -12,7 +12,8 @@ struct RankingView: View {
     @State private var rankingUsersData: [RankingUser] = []
     @State private var selectedGender = 0  // 0 = BOTH, 1 = MAN, 2 = WOMAN
     @State private var searchText = ""
-
+    @State private var isLoading = true  // Track loading state
+    
     var filteredUsers: [RankingUser] {
         let genderFilteredUsers: [RankingUser]
         
@@ -47,23 +48,44 @@ struct RankingView: View {
 
                 RankingInfo()
 
-                RankingUsersView(users: filteredUsers, isSearchActive: !searchText.isEmpty)
+                // Show loading indicator while data is being fetched
+                if isLoading {
+                    loadingIndicator
+                        .padding(.top, UIScreen.main.bounds.height / 6)
+                } else {
+                    RankingUsersView(users: filteredUsers, isSearchActive: !searchText.isEmpty)
+                }
             }
             .padding(.vertical, 140)
         }
         .frame(maxHeight: .infinity)
         .onAppear {
             Task {
-                // Wywołanie asynchronicznej funkcji do generowania rankingu
                 do {
+                    // Show loading indicator
+                    isLoading = true
+                    
                     rankingUsersData = try await RankingManager().generateRanking()
+                    
+                    // Hide loading indicator once data is fetched
+                    isLoading = false
                 } catch {
                     print("Błąd ładowania rankingu: \(error)")
+                    isLoading = false
                 }
             }
         }
     }
+    
+    private var loadingIndicator: some View {
+        VStack {
+            AnimatedLoader(size: 45)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .transition(.opacity)
+    }
 }
+
 
 
 
