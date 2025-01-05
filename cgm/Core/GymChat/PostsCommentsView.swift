@@ -60,7 +60,6 @@ struct PostCommentsView: View {
         }
     }
     
-    // Funkcja, która pobiera user_id aktualnie zalogowanego użytkownika
     private func loadCurrentUserID() async {
         do {
             currentUserID = try await DatabaseManager.shared.getCurrentUserDataBaseID()
@@ -68,7 +67,24 @@ struct PostCommentsView: View {
             print("Błąd podczas ładowania user_id:", error)
         }
     }
-    
+
+    // Funkcja usuwająca komentarz z bazy danych i lokalnej listy
+    private func deleteComment(commentId: Int) async {
+        do {
+            // Usunięcie komentarza z bazy danych
+            try await DatabaseManager.shared.deleteComment(commentId: commentId)
+            
+            // Usunięcie komentarza z lokalnej listy
+            if let index = comments.firstIndex(where: { $0.comment_id == commentId }) {
+                comments.remove(at: index)
+            }
+            
+            print("Comment with ID \(commentId) has been deleted.")
+        } catch {
+            print("Failed to delete comment with ID \(commentId): \(error)")
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
@@ -88,13 +104,13 @@ struct PostCommentsView: View {
                         Text(post.userName)
                             .font(.custom("Inter18pt-Regular", size: 15))
                         
-                        Text(formatDate2(post.date))
+                        Text(post.date)
                             .font(.custom("Inter18pt-Light", size: 12))
                             .foregroundColor(.gray)
                     }
                     Spacer()
                     
-                    Text(timeAgo(from: post.date))
+                    Text("5 min ago")
                         .font(.custom("Inter18pt-Light", size: 12))
                         .foregroundColor(.gray)
                 }
@@ -121,7 +137,7 @@ struct PostCommentsView: View {
                         .onLongPressGesture {
                             if comment.user_id == currentUserID {
                                 selectedComment = comment
-                                showActionSheet = true
+                                showActionSheet = true // Pokaż action sheet, tylko jeśli user_id jest taki sam jak aktualny user
                             }
                         }
                 }
@@ -168,6 +184,12 @@ struct PostCommentsView: View {
                     .destructive(Text("Delete")) {
                         if let comment = selectedComment {
                             print("Delete clicked for comment with ID: \(comment.comment_id)")
+                            // Usuwanie komentarza
+                            if let commentId = selectedComment?.comment_id {
+                                Task {
+                                    await deleteComment(commentId: commentId)
+                                }
+                            }
                         }
                     },
                     .cancel()
@@ -217,8 +239,6 @@ struct CommentView: View {
         }
     }
 }
-
-
 
 #Preview {
     MainView()

@@ -23,10 +23,9 @@ struct YourPostsView: View {
                                 showActionMenu(for: post)
                             }
                             .onTapGesture {
-                                selectedPost = post // Ustawiamy wybrany post
+                                selectedPost = post
                             }
                             .onAppear {
-                                // Tylko raz ładować posty przy pierwszym pojawieniu się widoku
                                 if gymChatModel.posts.isEmpty {
                                     Task {
                                         await gymChatModel.loadPostsForUser(userID: userID)
