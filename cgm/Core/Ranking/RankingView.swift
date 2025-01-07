@@ -62,10 +62,12 @@ struct RankingView: View {
         .onAppear {
             Task {
                 do {
+                    // Show loading indicator
                     isLoading = true
                     
                     rankingUsersData = try await RankingManager().generateRanking()
                     
+                    // Hide loading indicator once data is fetched
                     isLoading = false
                 } catch {
                     print("Błąd ładowania rankingu: \(error)")
@@ -100,7 +102,7 @@ struct SearchBar: View {
                 .font(.system(size: 16))
                 .padding(.vertical, 10)
         }
-        .background(Color(hex: "EEEEEF"))
+        .background(Color(.systemGray6))
         .cornerRadius(12)
         .padding(.horizontal)
         .padding(.top)
@@ -111,27 +113,10 @@ struct SearchBar: View {
 struct SelectGenderMikolajKradnieNazwe: View {
     @Binding var selectedGender: Int
     
-    init(selectedGender: Binding<Int>) {
-        self._selectedGender = selectedGender
-        
-        let appearance = UISegmentedControl.appearance()
-        appearance.selectedSegmentTintColor = UIColor(named: "Fioletowy")
-        
-        let attributes: [NSAttributedString.Key: Any] = [.foregroundColor: UIColor.white]
-        let defaultAttributes: [NSAttributedString.Key: Any] = [.foregroundColor: UIColor.black]
-        
-        appearance.setTitleTextAttributes(attributes, for: .selected)
-        appearance.setTitleTextAttributes(defaultAttributes, for: .normal)
-    }
-    
     var body: some View {
-        Picker("Gender", selection: $selectedGender) {
-            Text("BOTH").tag(0)
-            Text("MAN").tag(1)
-            Text("WOMAN").tag(2)
-        }
-        .pickerStyle(.segmented)
+        CustomSegmentedControl(selectedIndex: $selectedGender, titles: ["BOTH", "MAN", "WOMAN"])
         .padding(16)
+        
         
     }
 }
@@ -174,7 +159,7 @@ struct RankingUsersView: View {
                         HStack {
                             Text(user.name)
                                 .font(.system(size: 14))
-                                .foregroundColor(.black)
+                                .foregroundColor(.primary)
                                 .lineLimit(1)
                                 .truncationMode(.tail)
                                 .frame(maxWidth: 200, alignment: .leading)

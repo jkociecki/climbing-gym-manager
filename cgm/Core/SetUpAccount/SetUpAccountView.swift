@@ -178,23 +178,23 @@ struct SetUpAccountView: View {
                 VStack(alignment: .leading) {
                     Text(title)
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundColor(Color(.systemGray))
                     
                     ZStack(alignment: .leading) {
                         // Wyświetlanie placeholdera jako Text
                         if text.isEmpty {
                             Text(placeholder)
-                                .foregroundColor(.black) // Kolor placeholdera
+                                .foregroundColor(.primary) // Kolor placeholdera
                                 .font(.body)
                         }
                         // TextField lub SecureField
                         if isSecure {
                             SecureField("", text: $text)
-                                .foregroundColor(.black)
+                                .foregroundColor(.primary)
                                 .font(.body)
                         } else {
                             TextField("", text: $text)
-                                .foregroundColor(.black)
+                                .foregroundColor(.primary)
                                 .font(.body)
                         }
                     }
@@ -202,7 +202,7 @@ struct SetUpAccountView: View {
                 
             }.background(Rectangle()
                 .cornerRadius(15)
-                .foregroundColor(.background))
+                .foregroundColor(Color(.systemGray6)))
             .padding(.vertical, -1)
         }
     }
@@ -272,12 +272,13 @@ struct SelectGender: View {
                     }
                 )
             }
+            Spacer()
         }
         .frame(maxWidth: .infinity)
         .background(
             Rectangle()
                 .cornerRadius(15)
-                .foregroundColor(.background)
+                .foregroundColor(Color(.systemGray6))
         )
     }
 }
@@ -293,14 +294,14 @@ struct GenderButton: View {
         Text(title)
             .frame(width: 80, height: 20)
             .font(.custom("Inter18pt-SemiBold", size: 15))
-            .foregroundStyle(isSelected ? .white : .black)
-            .padding(.horizontal, 20)
+            .foregroundStyle(isSelected ? .white : .secondary)
+            .padding(.horizontal, 30)
             .padding(.vertical, 10)
             .background(
                 ZStack {
                     RoundedRectangle(cornerRadius: 15)
                         .fill(isSelected ? .fioletowy : Color(.systemGray5))
-                        .frame(width: 100, height: 35)
+                        .frame(height: 35)
                         .overlay(
                             RoundedRectangle(cornerRadius: 15)
                                 .fill(
@@ -311,7 +312,7 @@ struct GenderButton: View {
                                         endPoint: .trailing
                                     )
                                 )
-                                .frame(width: 100, height: 35)
+                                .frame(height: 35)
                         )
                 }
             )

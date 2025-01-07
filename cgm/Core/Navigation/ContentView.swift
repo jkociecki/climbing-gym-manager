@@ -6,9 +6,12 @@ struct MainView: View {
     @State private var showSideMenu:        Bool = false
     @State private var selectedView:        String = "Home"
     @State private var showFilterPanel:     Bool = false
-    @State private var isAuthenticated:     Bool = true  // New state
+    @State private var showAddNewPost:      Bool = false
+    @State private var isAuthenticated:     Bool = true
+    @State private var isWhileZooming:      Bool = false
     @StateObject private var mapViewModel: MapViewModel = MapViewModel(isCurrentGym: false)
     @StateObject private var authManager = AuthManager.shared
+    
 
     
     
@@ -57,6 +60,9 @@ struct MainView: View {
                      SlidingFilterPanel(isShowing: $showFilterPanel,
                                       mapViewModel: mapViewModel)
                          .zIndex(2)
+                     
+                     SlidinNewPostView(isShowing: $showAddNewPost)
+                         .zIndex(2)
                  }
                  .ignoresSafeArea(.keyboard, edges: .bottom)
                  .animation(.easeInOut(duration: 0.3), value: showSideMenu)
@@ -104,8 +110,10 @@ struct MainView: View {
             return TopBarConfig(
                 title: ( UserDefaults.standard.string(forKey: "selectedGymName") ?? "Gym" ) + " Chat",
                 leftButton: .menuButton(showSideMenu: $showSideMenu),
-                rightButton: .custom(icon: "square.and.arrow.up") {
-                    print("Share tapped")
+                rightButton: .notification {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        showAddNewPost.toggle()
+                                        }
                 }
             )
             
@@ -157,6 +165,7 @@ struct TabView: View {
                 case "plus":
                     GymChatView()
                 default:
+                    //GymChatView()
                     MapView(mapViewModel: mapViewModel, isTapInteractive: true, tapPosistion: $tapPosistion, isEdit: false)
                 }
             }
@@ -171,7 +180,7 @@ struct TabView: View {
                 case "Switch Gym":
                     SelectGymView()
                  case "Settings":
-                    AddNewView()
+                    SettingsView()
                 case "Logout":
                     LogoutHandlerView()
                 case "Gym Owner Panel":
@@ -266,7 +275,7 @@ struct LogoutHandlerView: View {
         isLoggingOut = true
         do {
             try await authManager.logOut()
-            await authManager.checkAuth() 
+            await authManager.checkAuth()
         } catch {
             errorMessage = error.localizedDescription
             showError = true

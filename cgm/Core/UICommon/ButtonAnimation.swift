@@ -14,7 +14,7 @@ class SoundManager: ObservableObject {
     var audioPlayer: AVAudioPlayer?
     
     init() {
-        if let soundURL = Bundle.main.url(forResource: "success", withExtension: "mp3") {
+        if let soundURL = Bundle.main.url(forResource: "successSound", withExtension: "mp3") {
             do {
                 audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
                 audioPlayer?.prepareToPlay()

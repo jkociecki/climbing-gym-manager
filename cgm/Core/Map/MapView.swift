@@ -10,7 +10,8 @@ struct MapView: View {
     let zoomScale: CGFloat = 1.2
     @State var transform: CGAffineTransform
     @Binding var tapPosition: CGPoint
-    
+    @State private var isWhileZooming:      Bool = false
+
     init(mapViewModel: MapViewModel, isTapInteractive: Bool, tapPosistion: Binding<CGPoint>, isEdit: Bool) {
         _transform = State(initialValue: CGAffineTransform(scaleX: defaultScale, y: defaultScale))
         self.mapViewModel = mapViewModel
@@ -39,6 +40,7 @@ struct MapView: View {
                     transform: $transform,
                     paths: $mapViewModel.gymSectors,
                     prevTapPos: $tapPosition,
+                    isWhileZooming: $isWhileZooming,
                     isTapInteractive: isTapInteractive
                 )
                 .ignoresSafeArea()
@@ -48,11 +50,11 @@ struct MapView: View {
                 .transformEffect(transform)
                 .ignoresSafeArea()
                 .drawingGroup()
-
-
+            
+            
             ForEach(Array(mapViewModel.gymSectors.enumerated()), id: \.offset) { sectorIndex, sector in
                 let center = sector.paths[0].path.boundingRect
-
+                
                 Text(sector.id)
                     .font(.custom("Righteous-Regular", size: 8))
                     .foregroundStyle(.white)
@@ -67,8 +69,8 @@ struct MapView: View {
                     .transformEffect(transform)
                     .ignoresSafeArea()
                     .drawingGroup()
-
-
+                
+                
             }
         }
         .sheet(item: $selectedBoulder) { boulderId in
@@ -77,12 +79,22 @@ struct MapView: View {
             }else{
                 BoulderInfoView(viewModel: BoulderInfoModel(boulderID: boulderId, userID: AuthManager.shared.userUID ?? ""), boulders: $mapViewModel.boulders)
             }
-
+            
         }
     }
     
     private var bouldersOverlay: some View {
         ZStack {
+            let visibleRect: CGRect = {
+                if isWhileZooming {
+                    return CGRect()
+                } else {
+                    return calculateVisibleRect()
+                }
+            }()
+            
+            let scaleFactor = transform.a
+
             ForEach(mapViewModel.boulders, id: \.id) { boulder in
                 let centerPosition: CGPoint = {
                     if let sectorIndex = mapViewModel.gymSectors.firstIndex(where: { $0.id == boulder.sector }) {
@@ -93,10 +105,12 @@ struct MapView: View {
                     return CGPoint(x: 0, y: 0)
                 }()
                 
-                let scaleFactor = transform.a
-                let visibleRect = calculateVisibleRect()
                 let isVisible = visibleRect.contains(CGPoint(x: boulder.x, y: boulder.y))
                 let isZoomedIn = scaleFactor > 1.5
+                
+                let targetPosition = CGPoint(x: boulder.x, y: boulder.y)
+                let offsetX = isVisible && isZoomedIn ? 0 : (centerPosition.x - targetPosition.x)
+                let offsetY = isVisible && isZoomedIn ? 0 : (centerPosition.y - targetPosition.y)
                 
                 ZStack {
                     Text(boulder.difficulty)
@@ -113,9 +127,11 @@ struct MapView: View {
                                 .stroke(Color.white, lineWidth: 1)
                         )
                         .overlay(getBoulderIcon(isFlased: boulder.isDone))
-                        .position(isVisible ? CGPoint(x: boulder.x, y: boulder.y) : centerPosition)
+                        .position(targetPosition)
+                        .offset(x: offsetX, y: offsetY)
+                        .animation(.easeOut(duration: 0.2), value: offsetX)
+                        .animation(.easeOut(duration: 0.2), value: offsetY)
                         .opacity(isZoomedIn ? (isVisible ? 1 : 0) : 0)
-                        .modifier(TransitionModifier(isVisible: isVisible))
                         .onTapGesture {
                             if isVisible && isZoomedIn {
                                 selectedBoulder = boulder.id
@@ -123,6 +139,42 @@ struct MapView: View {
                         }
                 }
             }
+        }
+    }
+
+    struct BoulderView: View {
+        let boulder: Boulder // załóżmy że to jest twój model boulderu
+        let isVisible: Bool
+        let isZoomedIn: Bool
+        let centerPosition: CGPoint
+        let onTap: () -> Void
+        
+        var body: some View {
+            Text(boulder.difficulty)
+                .font(.custom("Righteous-Regular", size: 5))
+                .foregroundColor(.white)
+                .padding(5)
+                .background(
+                    Circle()
+                        .fill(boulder.color)
+                        .shadow(color: boulder.color.opacity(0.4), radius: 5, x: 0, y: 2)
+                )
+                .overlay(
+                    Circle()
+                        .stroke(Color.white, lineWidth: 1)
+                )
+                //.overlay(getBoulderIcon(isFlased: boulder.isDone))
+                .position(
+                    isVisible && isZoomedIn ?
+                        CGPoint(x: boulder.x, y: boulder.y) :
+                        centerPosition
+                )
+                .opacity(isZoomedIn ? (isVisible ? 1 : 0) : 0)
+//                .animation(
+//                    isVisible ? .easeOut(duration: 0.15) : nil,
+//                    value: isVisible && isZoomedIn
+//                )
+                .onTapGesture(perform: onTap)
         }
     }
     
@@ -152,22 +204,8 @@ struct MapView: View {
             EmptyView()
         }
     }
-    private func calculateVisibleRect() -> CGRect {
-        let inverseTransform = transform.inverted()
-        let screenSize = UIScreen.main.bounds.size
-        let topLeft = CGPoint.zero.applying(inverseTransform)
-        let topRight = CGPoint(x: screenSize.width, y: 0).applying(inverseTransform)
-        let bottomLeft = CGPoint(x: 0, y: screenSize.height).applying(inverseTransform)
-        let bottomRight = CGPoint(x: screenSize.width, y: screenSize.height).applying(inverseTransform)
-
-        let minX = min(min(topLeft.x, topRight.x), min(bottomLeft.x, bottomRight.x))
-        let maxX = max(max(topLeft.x, topRight.x), max(bottomLeft.x, bottomRight.x))
-        let minY = min(min(topLeft.y, topRight.y), min(bottomLeft.y, bottomRight.y))
-        let maxY = max(max(topLeft.y, topRight.y), max(bottomLeft.y, bottomRight.y))
-
-        return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
-    }
-
+    
+    
     
     struct TransitionModifier: ViewModifier {
         let isVisible: Bool
@@ -183,7 +221,31 @@ struct MapView: View {
                     value: isVisible
                 )
         }
-    }}
+    }
+    
+    private func calculateVisibleRect() -> CGRect {
+        print("sadsada")
+        let inverseTransform = transform.inverted()
+        let screenSize = UIScreen.main.bounds.size
+        let topLeft = CGPoint.zero.applying(inverseTransform)
+        let topRight = CGPoint(x: screenSize.width, y: 0).applying(inverseTransform)
+        let bottomLeft = CGPoint(x: 0, y: screenSize.height).applying(inverseTransform)
+        let bottomRight = CGPoint(x: screenSize.width, y: screenSize.height).applying(inverseTransform)
+
+        let minX = min(min(topLeft.x, topRight.x), min(bottomLeft.x, bottomRight.x))
+        let maxX = max(max(topLeft.x, topRight.x), max(bottomLeft.x, bottomRight.x))
+        let minY = min(min(topLeft.y, topRight.y), min(bottomLeft.y, bottomRight.y))
+        let maxY = max(max(topLeft.y, topRight.y), max(bottomLeft.y, bottomRight.y))
+
+        return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+    }
+    
+    
+    
+    
+    
+    
+}
 
 extension Int: Identifiable {
     public var id: Int { self }
@@ -195,24 +257,12 @@ struct SectorView: View {
     var body: some View {
         if sector.id != "nclick" {
             ZStack {
-                PathView(
-                    path: sector.paths[1].path,
-                    defaultColor: Color(hex: "#CFF6FF"),
-                    selectedColor: Color(hex: "#DCDCDC"),
-                    isSelected: isSelected
-                )
-                PathView(
-                    path: sector.paths[2].path,
-                    defaultColor: Color("Czerwony"),
-                    selectedColor: Color(hex: "#7D7D7D"),
-                    isSelected: isSelected
-                )
-                PathView(
-                    path: sector.paths[3].path,
-                    defaultColor: Color("Fioletowy"),
-                    selectedColor: Color(hex: "#4A4A4A"),
-                    isSelected: isSelected
-                )
+                ForEach(Array(sector.paths.enumerated()), id: \.offset) { _, pathWrapper in
+                    PathView(path: pathWrapper.path,
+                             defaultColor: pathWrapper.color,
+                             selectedColor: pathWrapper.color,
+                             isSelected: isSelected)
+                }
 
             }
         } else {

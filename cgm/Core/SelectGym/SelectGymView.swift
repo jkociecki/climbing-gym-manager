@@ -26,12 +26,20 @@ struct SelectGymView: View {
         ScrollView{
             NavigationView {
                 VStack {
-                    TextField("Search...", text: $searchText)
-                        .padding(8)
-                        .background(Color.gray.opacity(0.2))
-                        .cornerRadius(8)
-                        .padding(.horizontal)
-                        .padding(.top, 30)
+                    HStack {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundColor(.gray)
+                            .padding()
+                        
+                        TextField("Search...", text: $searchText)
+                            
+                    }
+                    .background(Color(.systemGray6))
+                    .cornerRadius(12)
+                    .padding(.horizontal)
+                    .padding(.top, 30)
+                
+            
 
                     List(filteredGyms) { gym in
                         HStack {
@@ -64,7 +72,7 @@ struct SelectGymView: View {
                     .listStyle(PlainListStyle())
                 }
             }
-            .padding(.vertical, 140)
+            .padding(.top, 140)
         }
         .frame(maxHeight: .infinity)
     }

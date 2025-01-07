@@ -6,8 +6,6 @@
 //
 
 import SwiftUI
-
-
 struct PostCommentsView: View {
     @State var post: Post
     @State private var commentContent: String = ""
@@ -15,18 +13,12 @@ struct PostCommentsView: View {
     @State private var userCache: [Int: String] = [:]
     @State private var userProfilePicturesCache: [Int: UIImage] = [:]
     
-    @State private var showActionSheet: Bool = false
-    @State private var selectedComment: CommentsD? = nil // Wybrany komentarz
-    
-    // Zmienna przechowująca aktualne user_id
-    @State private var currentUserID: Int? = nil
-
     private func loadUserNames() async {
         for comment in comments {
             if let userData = try? await DatabaseManager.shared.getUserOverID(userID: String(comment.user_id)) {
                 let fullName = (userData.name ?? "Anonymous") + " " + (userData.surname ?? "")
                 userCache[comment.user_id] = fullName
-
+                
                 Task {
                     do {
                         if let imgData = try? await StorageManager.shared.fetchUserProfilePicture(user_uid: userData.uid.uuidString) {
@@ -60,33 +52,9 @@ struct PostCommentsView: View {
         }
     }
     
-    private func loadCurrentUserID() async {
-        do {
-            currentUserID = try await DatabaseManager.shared.getCurrentUserDataBaseID()
-        } catch {
-            print("Błąd podczas ładowania user_id:", error)
-        }
-    }
-
-    // Funkcja usuwająca komentarz z bazy danych i lokalnej listy
-    private func deleteComment(commentId: Int) async {
-        do {
-            // Usunięcie komentarza z bazy danych
-            try await DatabaseManager.shared.deleteComment(commentId: commentId)
-            
-            // Usunięcie komentarza z lokalnej listy
-            if let index = comments.firstIndex(where: { $0.comment_id == commentId }) {
-                comments.remove(at: index)
-            }
-            
-            print("Comment with ID \(commentId) has been deleted.")
-        } catch {
-            print("Failed to delete comment with ID \(commentId): \(error)")
-        }
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
+            Spacer()
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Image(uiImage: post.profilePicture ?? UIImage(named: "default_avatar")!)
@@ -100,6 +68,7 @@ struct PostCommentsView: View {
                                                         endPoint: .trailing
                                                     ), lineWidth: 4))
 
+                    
                     VStack(alignment: .leading, spacing: 4) {
                         Text(post.userName)
                             .font(.custom("Inter18pt-Regular", size: 15))
@@ -107,6 +76,7 @@ struct PostCommentsView: View {
                         Text(post.date)
                             .font(.custom("Inter18pt-Light", size: 12))
                             .foregroundColor(.gray)
+                            
                     }
                     Spacer()
                     
@@ -134,12 +104,6 @@ struct PostCommentsView: View {
                 ForEach(comments, id: \.comment_id) { comment in
                     let profileImage = userProfilePicturesCache[comment.user_id] ?? UIImage(named: "default_avatar")!
                     CommentView(image: profileImage, nickname: userCache[comment.user_id] ?? "Anonymous", content: comment.content, timestamp: comment.created_at)
-                        .onLongPressGesture {
-                            if comment.user_id == currentUserID {
-                                selectedComment = comment
-                                showActionSheet = true // Pokaż action sheet, tylko jeśli user_id jest taki sam jak aktualny user
-                            }
-                        }
                 }
             }
             .frame(maxHeight: .infinity)
@@ -155,7 +119,7 @@ struct PostCommentsView: View {
                 
                 Image(systemName: "paperplane")
                     .padding(.trailing, 20)
-                    .foregroundColor(Color.green)
+                    .foregroundColor(Color.czerwony)
                     .onTapGesture {
                         Task {
                             let currentUserID = try await DatabaseManager.shared.getCurrentUserDataBaseID()
@@ -169,32 +133,6 @@ struct PostCommentsView: View {
         .task {
             await fetchComments()
             await loadUserNames()
-            await loadCurrentUserID() // Ładujemy aktualnego usera
-        }
-        .actionSheet(isPresented: $showActionSheet) {
-            ActionSheet(
-                title: Text("Manage Comment"),
-                message: nil,
-                buttons: [
-                    .default(Text("Edit")) {
-                        if let comment = selectedComment {
-                            print("Edit clicked for comment with ID: \(comment.comment_id)")
-                        }
-                    },
-                    .destructive(Text("Delete")) {
-                        if let comment = selectedComment {
-                            print("Delete clicked for comment with ID: \(comment.comment_id)")
-                            // Usuwanie komentarza
-                            if let commentId = selectedComment?.comment_id {
-                                Task {
-                                    await deleteComment(commentId: commentId)
-                                }
-                            }
-                        }
-                    },
-                    .cancel()
-                ]
-            )
         }
     }
 }
@@ -228,18 +166,15 @@ struct CommentView: View {
                     .font(.custom("Inter18pt-Regular", size: 12))
                     .lineLimit(nil)
                     .lineSpacing(2)
+
             }
             .padding()
             .background(
                 RoundedRectangle(cornerRadius: 15)
-                    .foregroundStyle(Color(.systemGray6))
+                    .foregroundStyle(Color(.systemGray5))
             )
             .padding(.trailing, 20)
             .padding(.top, 10)
         }
     }
-}
-
-#Preview {
-    MainView()
 }

@@ -12,6 +12,7 @@ struct GestureTransformView: UIViewRepresentable {
     @Binding var transform:     CGAffineTransform
     @Binding var paths:         [Sector]
     @Binding var prevTapPos:    CGPoint
+    @Binding var isWhileZooming: Bool
     var onAreaTapped:           ((Int, String) -> Void)?
     var isTapInteractive:       Bool
     @State private var viewSize: CGSize = .zero
@@ -48,15 +49,18 @@ struct GestureTransformView: UIViewRepresentable {
     }
     
     func updateUIView(_ uiView: UIView, context: Context) {
-        if viewSize != uiView.bounds.size {
-            viewSize = uiView.bounds.size
-            let newTransform = calculateInitialTransform(for: uiView)
-            initialTransform = newTransform
-            transform = newTransform
-            context.coordinator.initialTransform = newTransform
+        let currentSize = uiView.bounds.size
+        if currentSize != viewSize {
+            DispatchQueue.main.async {
+                viewSize = currentSize
+                let newTransform = calculateInitialTransform(for: uiView)
+                initialTransform = newTransform
+                transform = newTransform
+                context.coordinator.initialTransform = newTransform
+            }
         }
     }
-    
+
     private func calculateInitialTransform(for view: UIView) -> CGAffineTransform {
         var mapBounds = CGRect.zero
         for sector in paths {
@@ -96,7 +100,7 @@ extension GestureTransformView {
         var initialPinchCenter: CGPoint = .zero
         
         let minScale:           CGFloat = 0.1
-        let maxScale:           CGFloat = 5.0
+        let maxScale:           CGFloat = 10.0
         
         init(_ parent: GestureTransformView) {
             self.parent = parent
@@ -130,18 +134,25 @@ extension GestureTransformView {
         }
         
         private func handleAreaTap(sectorIndex: Int,
-                                 pathWrapper: PathWrapper,
-                                 gestureView: UIView) {
+                                   pathWrapper: PathWrapper,
+                                   gestureView: UIView) {
             if currentZoomedIndex == sectorIndex {
+                parent.isWhileZooming = true
                 animateTransform(to: initialTransform)
                 currentZoomedIndex = nil
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    self.parent.isWhileZooming = false
+                }
+
             } else {
+                parent.isWhileZooming = true
+                
                 let bounds = pathWrapper.path.boundingRect
                 let areaCenter = CGPoint(x: bounds.midX, y: bounds.midY)
                 
                 let targetScale: CGFloat = 2.5
                 let viewCenter = CGPoint(x: gestureView.bounds.midX,
-                                       y: gestureView.bounds.midY)
+                                         y: gestureView.bounds.midY)
                 
                 let targetTranslationX = viewCenter.x - (areaCenter.x * targetScale)
                 let targetTranslationY = viewCenter.y - (areaCenter.y * targetScale)
@@ -152,10 +163,14 @@ extension GestureTransformView {
                 
                 animateTransform(to: targetTransform)
                 currentZoomedIndex = sectorIndex
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    self.parent.isWhileZooming = false
+                }
             }
             
             parent.onAreaTapped?(sectorIndex, pathWrapper.id)
         }
+
         
         @objc func zoom(_ gesture: UIPinchGestureRecognizer) {
             guard let view = gesture.view else { return }
@@ -179,7 +194,7 @@ extension GestureTransformView {
                 let newScale = currentScale * scaleDelta
                 
                 if newScale >= minScale && newScale <= maxScale {
-                    var newTransform = parent.transform
+                    let newTransform = parent.transform
                         .translatedBy(x: originalPinchCenter.x,
                                     y: originalPinchCenter.y)
                         .scaledBy(x: scaleDelta, y: scaleDelta)

@@ -145,6 +145,7 @@ struct LineChartView: View {
         ZStack {
             RoundedRectangle(cornerRadius: 15)
                 .fill(Color(.secondarySystemBackground))
+                .padding(.horizontal, 0)
             
             if viewModel.lineChartData.isEmpty {
                 // Show "No Data Available" when there's no data
@@ -189,6 +190,7 @@ struct LineChartView: View {
                     AxisMarks(values: .automatic)
                 }
                 .frame(height: 200)
+                .padding(.horizontal, 16)
             }
         }
         .onAppear {
@@ -209,6 +211,7 @@ struct BarChartView: View {
         ZStack {
             RoundedRectangle(cornerRadius: 15)
                 .fill(Color(.secondarySystemBackground))
+                .padding(.horizontal, 0)
             
             VStack {
                 if viewModel.barChartData.isEmpty {

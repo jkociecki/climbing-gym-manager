@@ -82,12 +82,12 @@ struct StatBox: View
             
             Text(subtitle)
                 .font(.system(size: 10, weight: .light))
-                .foregroundColor(Color.gray)
+                .foregroundColor(Color(.systemGray))
         }
         .frame(maxWidth: .infinity, minHeight: 53)
-        .background(Color.white)
+        .background(Color(.systemGray6))
         .cornerRadius(15)
-        .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
+        // .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
     }
 }
 
@@ -241,42 +241,19 @@ struct SwitchableButtonProfile: View
 
 struct SwitchableViewProfile: View {
     var viewModel: ChartsViewModel
-    @State private var selectedTab: Tab = .progress
+    @State private var selectedTab = 0
     
-    enum Tab {
-        case progress
-        case combined
-    }
     
     var body: some View {
         VStack {
-            HStack(spacing: -20) {
-                SwitchableButtonProfile(
-                    buttonText: "PROGRESS",
-                    isSelected: selectedTab == .progress,
-                    action: {
-                        selectedTab = .progress
-                    }
-                )
-                
-                SwitchableButtonProfile(
-                    buttonText: "COMBINED",
-                    isSelected: selectedTab == .combined,
-                    action: {
-                        selectedTab = .combined
-                    }
-                )
-            }
-            .padding(.horizontal)
-            
-            if selectedTab == .progress {
+            CustomSegmentedControl(selectedIndex: $selectedTab, titles: ["PROGRESS", "COMBINED"])
+                .padding(.horizontal)
+            if selectedTab == 0 {
                 LineChartView(viewModel: viewModel)
-                         .frame(height: 250)
-                         .padding()
-                         .cornerRadius(15)
+                    .frame(height: 250)
                     .padding()
                     .cornerRadius(15)
-            } else if selectedTab == .combined {
+            } else {
                 BarChartView(viewModel: viewModel)
                     .frame(height: 250)
                     .padding()
@@ -287,9 +264,8 @@ struct SwitchableViewProfile: View {
 }
 
 
-
 struct TopTenBoulders: View {
-    @Binding var topBoulders: [TopTenBoulder]  // Use a binding to receive data
+    @Binding var topBoulders: [TopTenBoulder]
     @State private var isLoading = true
 
     var body: some View {
@@ -344,7 +320,7 @@ struct TopTenBoulders: View {
             }
         }
         .onAppear {
-            isLoading = false  // Data is assumed to be loaded once the view appears
+            isLoading = false
         }
         .padding(.horizontal, 16)
     }
@@ -368,16 +344,15 @@ struct AvgPointsBox: View
         VStack {
             Text(title)
                 .font(.system(size: 20, weight: .bold))
-                .foregroundColor(Color.black)
+                .foregroundColor(Color.primary)
 
             Text(subtitle)
                 .font(.system(size: 10, weight: .light))
                 .foregroundColor(Color.gray)
         }
         .frame(maxWidth: 115, minHeight: 53)
-        .background(Color.white)
+        .background(Color(.systemGray6))
         .cornerRadius(15)
-        .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
 
     }
 }

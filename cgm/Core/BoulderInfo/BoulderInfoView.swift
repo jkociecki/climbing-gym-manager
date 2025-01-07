@@ -20,7 +20,7 @@ struct BoulderInfoView: View {
     var body: some View {
         ZStack {
             if viewModel.isLoading {
-                AnimatedLoader(size: 60) 
+                AnimatedLoader(size: 60)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             } else {
@@ -97,7 +97,8 @@ struct Buttons_FL_Done: View {
                             handleButtonStateChange()
                             await viewModel.handleButtonStateChange()
                         }
-                    }
+                    },
+                    enableConfetti: true // Włącz animację konfetti tylko dla tego przycisku
                 )
             }
             .padding(.horizontal, 16)
@@ -140,7 +141,7 @@ struct BoulderTopBar: View {
                         .frame(width: 25, height: 25)
                     Text("\(sector)")
                         .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(Color.black)
+                        .foregroundColor(Color.primary)
                 }
 
                 Divider()
@@ -149,7 +150,7 @@ struct BoulderTopBar: View {
                 if let routesetter = routesetter, !routesetter.isEmpty {
                     Text(routesetter)
                         .font(.system(size: 15, weight: .light))
-                        .foregroundColor(Color.gray)
+                        .foregroundColor(Color(.systemGray))
                 }
             }
         }
@@ -165,56 +166,82 @@ struct GradientButton: View {
     var gradientEndColor: Color
     var isPressed: Bool
     var onTap: () -> Void
-
+    var enableConfetti: Bool = false
+    
+    @StateObject private var particleManager = ParticleManager()
+    @StateObject private var soundManager = SoundManager()
+    @State private var showConfetti = false
     @State private var isAnimating = false
-
+    
     var body: some View {
-        HStack {
-            Image(systemName: iconName)
-                .font(.system(size: 25))
-                .foregroundColor(.clear)
-                .background(
-                    LinearGradient(
-                        gradient: Gradient(colors: isPressed ? [gradientStartColor, gradientEndColor] : [Color.gray, Color.gray]),
-                        startPoint: .leading,
-                        endPoint: .trailing
+        ZStack {
+            HStack {
+                Image(systemName: iconName)
+                    .font(.system(size: 25))
+                    .foregroundColor(.clear)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: isPressed ? [gradientStartColor, gradientEndColor] : [Color.gray, Color.gray]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                        .mask(
+                            Image(systemName: iconName)
+                                .font(.system(size: 25))
+                        )
                     )
-                    .mask(
-                        Image(systemName: iconName)
-                            .font(.system(size: 25))
+                Text(buttonText)
+                    .font(.system(size: 25, weight: .bold))
+                    .foregroundColor(.clear)
+                    .padding(.leading, 8)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: isPressed ? [gradientStartColor, gradientEndColor] : [Color.gray, Color.gray]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                        .mask(
+                            Text(buttonText)
+                                .font(.system(size: 25, weight: .bold))
+                        )
                     )
-                )
-
-            Text(buttonText)
-                .font(.system(size: 25, weight: .bold))
-                .foregroundColor(.clear)
-                .padding(.leading, 8)
-                .background(
-                    LinearGradient(
-                        gradient: Gradient(colors: isPressed ? [gradientStartColor, gradientEndColor] : [Color.gray, Color.gray]),
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                    .mask(
-                        Text(buttonText)
-                            .font(.system(size: 25, weight: .bold))
-                    )
-                )
-        }
-        .frame(maxWidth: .infinity, minHeight: 65)
-        .background(Color.white)
-        .cornerRadius(15)
-        .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
-        .scaleEffect(isAnimating ? 0.95 : 1.0)
-        .onTapGesture {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                isAnimating.toggle()
             }
-            onTap()
-        }
-        .animation(.easeInOut(duration: 0.2), value: isAnimating)
-    }
-}
+            .frame(maxWidth: .infinity, minHeight: 65)
+            .background(Color(.secondarySystemBackground))
+                        .cornerRadius(15)
+                        //.shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
+                        .scaleEffect(isAnimating ? 0.95 : 1.0)
+                        .onTapGesture {
+                            let willBePressed = !isPressed
+                            
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                isAnimating.toggle()
+                            }
+                            
+                            // Only play sound and show confetti for Flash button when pressing
+                            if buttonText == "FLASH" && willBePressed && enableConfetti {
+                                soundManager.playSound()
+                                showConfetti = true
+                                particleManager.createParticles()
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                    showConfetti = false
+                                    particleManager.clearParticles()
+                                }
+                            }
+                            
+                            onTap()
+                        }
+                        .animation(.easeInOut(duration: 0.2), value: isAnimating)
+                        
+                        if enableConfetti && showConfetti {
+                            ForEach(particleManager.particles) { particle in
+                                ParticleView(state: particle)
+                                    .position(particle.position)
+                            }
+                        }
+                    }
+                }
+            }
 
 struct SwitchableButton: View
 {
@@ -239,14 +266,10 @@ struct SwitchableButton: View
 }
 
 struct SwitchableView: View {
-
-    @State private var selectedTab: Tab = .gradeRating
+    @State private var selectedTab = 0
     @ObservedObject var boulderInfoModel: BoulderInfoModel
 
-    enum Tab {
-        case gradeRating
-        case starRating
-    }
+    let tabTitles = ["GRADE RATING", "STAR RATING"]
 
     init(boulderInfoModel: BoulderInfoModel) {
         self.boulderInfoModel = boulderInfoModel
@@ -254,32 +277,14 @@ struct SwitchableView: View {
 
     var body: some View {
         VStack {
-            // Górny przełącznik zakładek
-            HStack(spacing: -20) {
-                SwitchableButton(
-                    buttonText: "GRADE RATING",
-                    isSelected: selectedTab == .gradeRating,
-                    action: {
-                        selectedTab = .gradeRating
-                    }
-                )
-                
-                SwitchableButton(
-                    buttonText: "STAR RATING",
-                    isSelected: selectedTab == .starRating,
-                    action: {
-                        selectedTab = .starRating
-                    }
-                )
-            }
-            .padding(.horizontal)
+            // Użycie niestandardowego przełącznika zakładek
+            CustomSegmentedControl(selectedIndex: $selectedTab, titles: tabTitles)
+                .padding(.horizontal)
 
             // Widok zależny od wybranej zakładki
-            if selectedTab == .gradeRating {
-                VotesAndSliderView(
-                    boulderInfoModel: boulderInfoModel
-                )
-            } else if selectedTab == .starRating {
+            if selectedTab == 0 {
+                VotesAndSliderView(boulderInfoModel: boulderInfoModel)
+            } else if selectedTab == 1 {
                 RatingSummaryAndRatingView(boulderInfoModel: boulderInfoModel)
             }
         }
@@ -762,8 +767,9 @@ struct RatingSummaryAndRatingView: View {
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
         }
-        .background(Color(UIColor.systemGray6))
+        .background(Color(.systemGray6))
         .cornerRadius(12)
+        .padding()
     }
     
     func fetchStarVote() async {
@@ -881,7 +887,7 @@ struct ToppedByTable: View {
                         if let user = viewModel.usersData[toppedBy.user_id] {
                             Text("\(user.0 ?? "") \(user.1 ?? "")")
                                 .font(.system(size: 14, weight: .light))
-                                .foregroundColor(.black)
+                                .foregroundColor(.primary)
                                 .lineLimit(1)
                                 .truncationMode(.tail)
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -893,7 +899,7 @@ struct ToppedByTable: View {
                     VStack(alignment: .trailing) {
                         Text(toppedBy.is_flashed ? "FL" : "RP")
                             .font(.subheadline)
-                            .foregroundColor(.black)
+                            .foregroundColor(.primary)
                             .lineLimit(1)
                             .truncationMode(.tail)
 

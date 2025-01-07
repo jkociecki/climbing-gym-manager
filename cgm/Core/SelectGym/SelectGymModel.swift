@@ -30,6 +30,8 @@ class SelectGymModel: ObservableObject {
     
     func storeSelectedGymIntoUserData(gymID: Int) {
         UserDefaults.standard.set(String(gymID), forKey: "selectedGym")
+        let selectedgymname = climbingGyms.first(where: { $0.id == selectedGym })?.name
+        UserDefaults.standard.set(selectedgymname, forKey: "selectedGymName")
     }
     
     func getStoredData() {
