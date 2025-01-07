@@ -224,7 +224,6 @@ struct MapView: View {
     }
     
     private func calculateVisibleRect() -> CGRect {
-        print("sadsada")
         let inverseTransform = transform.inverted()
         let screenSize = UIScreen.main.bounds.size
         let topLeft = CGPoint.zero.applying(inverseTransform)

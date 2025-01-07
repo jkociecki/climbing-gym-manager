@@ -95,9 +95,6 @@ struct GymChatView: View {
     
     private func showActionMenu(for post: Post) {
         let actionSheet = UIAlertController(title: "Manage Post", message: nil, preferredStyle: .actionSheet)
-        actionSheet.addAction(UIAlertAction(title: "Edit", style: .default, handler: { _ in
-            print("Edit post tapped", post.post_id)
-        }))
         actionSheet.addAction(UIAlertAction(title: "Delete", style: .destructive, handler: { _ in
             Task {
                 await gymChatModel.deletePost(postId: post.post_id)
@@ -204,7 +201,7 @@ struct PostView: View {
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
-        GymChatView()
-//        MainView()
+//        GymChatView()
+        MainView()
     }
 }

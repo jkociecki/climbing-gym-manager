@@ -137,12 +137,15 @@ struct RankingInfo: View {
 struct RankingUsersView: View {
     var users: [RankingUser] // Lista użytkowników
     var isSearchActive: Bool // Czy wyszukiwanie jest aktywne
-    
+    private let currentUserId = AuthManager.shared.userUID ?? ""
+
     var body: some View {
         ScrollView {
             VStack {
                 ForEach(users.indices, id: \.self) { index in
                     let user = users[index]
+                    let isCurrentUser = user.id.uuidString == currentUserId
+
                     HStack {
                         Text("\(index + 1)")
                             .font(.system(size: 22, weight: .semibold))
@@ -157,14 +160,13 @@ struct RankingUsersView: View {
                             .clipShape(Circle())
 
                         HStack {
-                            Text(user.name)
+                            Text(user.name + (isCurrentUser ? " (You)" : ""))
                                 .font(.system(size: 14))
                                 .foregroundColor(.primary)
                                 .lineLimit(1)
                                 .truncationMode(.tail)
                                 .frame(maxWidth: 200, alignment: .leading)
-                            
-                            // Dodanie pucharu dla Top 3, tylko jeśli wyszukiwanie jest wyłączone
+
                             if index < 3 && !isSearchActive {
                                 Image(systemName: "trophy.fill")
                                     .foregroundColor(index == 0 ? .yellow : (index == 1 ? .gray : .brown))
@@ -172,14 +174,14 @@ struct RankingUsersView: View {
                             }
                         }
                         Spacer()
-                        
+
                         VStack(alignment: .trailing) {
                             Text(user.level)
                                 .font(.system(size: 14, weight: .semibold))
                                 .foregroundColor(.black)
                                 .lineLimit(1)
                                 .truncationMode(.tail)
-                            
+
                             Text(user.progress)
                                 .font(.system(size: 14, weight: .light))
                                 .foregroundColor(.gray)
@@ -189,7 +191,9 @@ struct RankingUsersView: View {
                     }
                     .padding(.vertical, 7)
                     .padding(.horizontal, 5)
-                    
+                    .background(isCurrentUser ? Color.gray.opacity(0.3) : Color.clear)
+                    .cornerRadius(10)
+
                     if index < users.count - 1 {
                         Divider()
                             .background(Color.gray)

@@ -8,15 +8,15 @@
 import SwiftUI
 
 struct YourPostsView: View {
-    let userID: String // UserID z sesji
+    let userID: String
     @StateObject private var gymChatModel = GymChatModel()
-    @State private var selectedPost: Post? = nil // Przechowuje wybrany post
+    @State private var selectedPost: Post? = nil
     
     var body: some View {
         NavigationView {
             ScrollView {
                 LazyVStack(spacing: 16) {
-                    // Wyświetlanie postów
+
                     ForEach(gymChatModel.posts) { post in
                         PostView(post: post)
                             .onLongPressGesture {
@@ -34,12 +34,10 @@ struct YourPostsView: View {
                             }
                     }
 
-                    // Wskaźnik ładowania
                     if gymChatModel.isLoading {
                         loadingIndicator
                     }
 
-                    // Informacja o końcu postów
                     if !gymChatModel.hasMorePosts && !gymChatModel.posts.isEmpty {
                         endOfContentIndicator
                     }
@@ -48,11 +46,10 @@ struct YourPostsView: View {
             }
             .navigationTitle("Your Posts")
             .sheet(item: $selectedPost) { selectedPost in
-                PostCommentsView(post: selectedPost) // Wyświetlanie widoku komentarzy
+                PostCommentsView(post: selectedPost)
             }
         }
         .onAppear {
-            // Ładowanie postów, tylko raz przy pojawieniu się widoku
             if gymChatModel.posts.isEmpty {
                 Task {
                     await gymChatModel.loadPostsForUser(userID: userID)
@@ -61,12 +58,9 @@ struct YourPostsView: View {
         }
     }
     
-    // Funkcja wyświetlająca menu akcji dla posta
+
     private func showActionMenu(for post: Post) {
         let actionSheet = UIAlertController(title: "Manage Post", message: nil, preferredStyle: .actionSheet)
-        actionSheet.addAction(UIAlertAction(title: "Edit", style: .default, handler: { _ in
-            print("Edit post tapped", post.post_id)
-        }))
         actionSheet.addAction(UIAlertAction(title: "Delete", style: .destructive, handler: { _ in
             Task {
                 await gymChatModel.deletePost(postId: post.post_id)

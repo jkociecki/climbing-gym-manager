@@ -55,14 +55,17 @@ struct BoulderInfoView: View {
 struct Buttons_FL_Done: View {
     @ObservedObject var viewModel: BoulderInfoModel
     @Binding var boulders: [Boulder]
-    func handleButtonStateChange() {
-        if let boulder = boulders.firstIndex(where: { $0.id == viewModel.boulderID }) {
+
+    func handleButtonStateChange() async {
+        if let boulderIndex = boulders.firstIndex(where: { $0.id == viewModel.boulderID }) {
             if !viewModel.isDonePressed && !viewModel.isFlashPressed {
-                boulders[boulder].isDone = FlashDoneNone.NotDone
+                boulders[boulderIndex].isDone = FlashDoneNone.NotDone
             } else {
-                boulders[boulder].isDone = viewModel.isFlashPressed ? FlashDoneNone.Done : FlashDoneNone.Flash
+                boulders[boulderIndex].isDone = viewModel.isFlashPressed ? FlashDoneNone.Flash : FlashDoneNone.Done
             }
         }
+        await viewModel.handleButtonStateChange()
+        await viewModel.fetchToppedByData() 
     }
 
     var body: some View {
@@ -78,8 +81,7 @@ struct Buttons_FL_Done: View {
                         viewModel.isDonePressed.toggle()
                         viewModel.isFlashPressed = false
                         Task {
-                            handleButtonStateChange()
-                            await viewModel.handleButtonStateChange()
+                            await handleButtonStateChange()
                         }
                     }
                 )
@@ -94,11 +96,10 @@ struct Buttons_FL_Done: View {
                         viewModel.isFlashPressed.toggle()
                         viewModel.isDonePressed = false
                         Task {
-                            handleButtonStateChange()
-                            await viewModel.handleButtonStateChange()
+                            await handleButtonStateChange()
                         }
                     },
-                    enableConfetti: true // Włącz animację konfetti tylko dla tego przycisku
+                    enableConfetti: true
                 )
             }
             .padding(.horizontal, 16)
@@ -106,6 +107,8 @@ struct Buttons_FL_Done: View {
         }
     }
 }
+
+
 
 
 
@@ -929,4 +932,8 @@ struct ToppedByTable: View {
     }
 }
 
+
+#Preview {
+    MainView()
+}
 
