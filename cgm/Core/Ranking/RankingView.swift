@@ -145,10 +145,10 @@ struct RankingUsersView: View {
     var body: some View {
         ScrollView {
             VStack {
-                ForEach(users.indices, id: \.self) { index in
+                ForEach(users.enumerated().map { $0 }, id: \.element.id) { index, user in
                     let user = users[index]
-                    let isCurrentUser = user.id.uuidString == currentUserId
-
+                    let isCurrentUser = user.user_id.uuidString == currentUserId
+                    
                     HStack {
                         Text("\(index + 1)")
                             .font(.system(size: 22, weight: .semibold))
@@ -194,7 +194,7 @@ struct RankingUsersView: View {
                     }
                     .padding(.vertical, 7)
                     .padding(.horizontal, 5)
-                    .background(isCurrentUser ? Color.gray.opacity(0.3) : Color.clear)
+                    .background(isCurrentUser ? Color.gray.opacity(0.2) : Color.clear)
                     .cornerRadius(10)
 
                     if index < users.count - 1 {

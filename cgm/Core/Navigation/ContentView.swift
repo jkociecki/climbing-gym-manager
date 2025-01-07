@@ -19,12 +19,7 @@ struct MainView: View {
     
     var body: some View {
          Group {
-             if isAuthenhicating {
-                 ProgressView("Checking authentication...")
-                                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                     .background(Color.white)
-             }
-            else if authManager.isAuthenticated {
+             if authManager.isAuthenticated {
                  ZStack {
                      TopBar(config: getTopBarConfig())
                          .zIndex(1)
@@ -223,7 +218,7 @@ struct TabView: View {
                 case "Profile Settings":
                     SetUpAccountView(isLoading: $isLoading)
                 case "Your Posts":
-                    AddNewView()
+                    YourPostsView()
                 case "About Gym":
                     GymInfoView(isLoading: $isLoading)
                 case "Switch Gym":

@@ -8,6 +8,7 @@ struct RankingUser: Identifiable {
     var level: String
     var progress: String
     var imageData: Data?
+    var user_id: UUID
 }
 
 
@@ -113,7 +114,8 @@ class RankingManager {
                 gender: user.gender == nil ? "N/A" : (user.gender == true ? "M" : "K"),
                 level: level,
                 progress: progress,
-                imageData: imageData
+                imageData: imageData,
+                user_id: user.uid
             )
             
             rankingUsers.append(rankingUser)

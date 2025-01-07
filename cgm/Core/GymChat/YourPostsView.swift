@@ -1,4 +1,3 @@
-//
 //  YourPostsView.swift
 //  cgm
 //
@@ -8,47 +7,49 @@
 import SwiftUI
 
 struct YourPostsView: View {
-    let userID: String
     @State private var selectedPost: Post? = nil
     @State private var isLoading: Bool = false
     @StateObject private var gymChatModel: GymChatModel
+    @State private var posts: [Post] = []
+    @State private var userID: Int? = nil
 
-    init(userID: String) {
-        self.userID = userID
+    init() {
         _gymChatModel = StateObject(wrappedValue: GymChatModel(isLoading: .constant(false)))
     }
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                LazyVStack(spacing: 16) {
+            VStack {
+                if isLoading {
+                    loadingIndicator
+                } else {
+                    if gymChatModel.posts.isEmpty {
+                        noPostsIndicator
+                    } else {
+                        ScrollView {
+                            LazyVStack(spacing: 16) {
+                                ForEach(gymChatModel.posts) { post in
+                                    PostView(post: post)
+                                        .onLongPressGesture {
+                                            showActionMenu(for: post)
+                                        }
+                                        .onTapGesture {
+                                            selectedPost = post
+                                        }
+                                }
 
-                    ForEach(gymChatModel.posts) { post in
-                        PostView(post: post)
-                            .onLongPressGesture {
-                                showActionMenu(for: post)
-                            }
-                            .onTapGesture {
-                                selectedPost = post
-                            }
-                            .onAppear {
-                                if gymChatModel.posts.isEmpty {
-                                    Task {
-                                        await gymChatModel.loadPostsForUser(userID: userID)
-                                    }
+                                if gymChatModel.isLoading {
+                                    loadingIndicator
+                                }
+
+                                if !gymChatModel.hasMorePosts && !gymChatModel.posts.isEmpty {
+                                    endOfContentIndicator
                                 }
                             }
-                    }
-
-                    if gymChatModel.isLoading {
-                        loadingIndicator
-                    }
-
-                    if !gymChatModel.hasMorePosts && !gymChatModel.posts.isEmpty {
-                        endOfContentIndicator
+                            .padding()
+                        }
                     }
                 }
-                .padding()
             }
             .navigationTitle("Your Posts")
             .sheet(item: $selectedPost) { selectedPost in
@@ -56,14 +57,35 @@ struct YourPostsView: View {
             }
         }
         .onAppear {
-            if gymChatModel.posts.isEmpty {
-                Task {
-                    await gymChatModel.loadPostsForUser(userID: userID)
-                }
+            Task {
+                await loadUserData()
             }
         }
     }
-    
+
+    private func loadUserData() async {
+        isLoading = true
+        do {
+            // Wczytanie userID
+            userID = try await DatabaseManager.shared.getCurrentUserDataBaseID()
+            if let userID = userID {
+                // Wczytanie postów po pobraniu userID
+                await loadPosts(userID: userID)
+            }
+        } catch {
+            print("Error loading user ID: \(error)")
+        }
+    }
+
+    private func loadPosts(userID: Int) async {
+        do {
+            // Asynchroniczne pobranie postów
+            await gymChatModel.loadPostsForUser(userID: String(userID))
+        } catch {
+            print("Error loading posts: \(error)")
+        }
+        isLoading = false
+    }
 
     private func showActionMenu(for post: Post) {
         let actionSheet = UIAlertController(title: "Manage Post", message: nil, preferredStyle: .actionSheet)
@@ -86,6 +108,14 @@ struct YourPostsView: View {
             .transition(.opacity)
     }
 
+    // Komunikat o braku postów
+    private var noPostsIndicator: some View {
+        Text("No posts available")
+            .foregroundColor(.secondary)
+            .padding()
+            .transition(.opacity)
+    }
+
     // Komunikat o końcu dostępnych postów
     private var endOfContentIndicator: some View {
         Text("No more posts to load")
@@ -94,5 +124,3 @@ struct YourPostsView: View {
             .transition(.opacity)
     }
 }
-
-
