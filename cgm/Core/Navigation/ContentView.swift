@@ -82,20 +82,22 @@ struct MainView: View {
             return TopBarConfig(
                 title: UserDefaults.standard.string(forKey: "selectedGymName") ?? "Gym Name",
                 leftButton: .menuButton(showSideMenu: $showSideMenu),
-                rightButton: .notification {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                                            showFilterPanel.toggle()
-                                        }
-                }
+                rightButton: .custom(icon: "slider.vertical.3") { showFilterPanel.toggle() }
+                
             )
+            
+        case "Statistics":
+            return TopBarConfig(
+                title: UserDefaults.standard.string(forKey: "selectedGymName").map { "\($0) Ranking" } ?? "Gym Ranking",
+                leftButton: .menuButton(showSideMenu: $showSideMenu)
+            )
+
             
         case "Profile":
             return TopBarConfig(
                 title: "Profile",
                 leftButton: .menuButton(showSideMenu: $showSideMenu),
-                rightButton: .custom(icon: "gear") {
-                    print("Settings tapped")
-                }
+                rightButton: .none
             )
             
             
@@ -104,36 +106,61 @@ struct MainView: View {
                 title: "Gym Administrator Panel",
                 leftButton: .menuButton(showSideMenu: $showSideMenu)
             )
+      
+        case "Profile Settings":
+            return TopBarConfig(
+                title: "Profile Settings",
+                leftButton: .menuButton(showSideMenu: $showSideMenu)
+            )
             
+        case "About Gym":
+            return TopBarConfig(
+                title: "About" +
+                (UserDefaults.standard.string(forKey: "selectedGymName") ?? "Gym"),
+                leftButton: .menuButton(showSideMenu: $showSideMenu)
+            )
+
+        case "Switch Gym":
+            return TopBarConfig(
+                title: "Select gym",
+                leftButton: .menuButton(showSideMenu: $showSideMenu)
+            )
             
+        case "Settings":
+            return TopBarConfig(
+                title: "Settings",
+                leftButton: .menuButton(showSideMenu: $showSideMenu)
+            )
+            
+        case "Your Posts:":
+            return TopBarConfig(
+                title: "Gym Administrator Panel",
+                leftButton: .menuButton(showSideMenu: $showSideMenu)
+            )
+            
+
         case "Add New":
             return TopBarConfig(
                 title: ( UserDefaults.standard.string(forKey: "selectedGymName") ?? "Gym" ) + " Chat",
                 leftButton: .menuButton(showSideMenu: $showSideMenu),
-                rightButton: .notification {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        showAddNewPost.toggle()
-                                        }
-                }
+                rightButton: .custom(icon: "plus.bubble", action: {
+                    showAddNewPost.toggle()
+                })
             )
             
         default:
             return TopBarConfig(
                 title: "",
-                leftButton: .menuButton(showSideMenu: $showSideMenu),
-                rightButton: .custom(icon: "square.and.arrow.up") {
-                    print("Share tapped")
-                }
-            )
+                leftButton: .menuButton(showSideMenu: $showSideMenu)            )
         }
     }
     
     private func getDefaultViewForTab(_ tab: String) -> String {
         switch tab {
         case "house":       return "Home"
-        case "chart.bar":   return "Statistics"
+        case "medal":       return "Statistics"
         case "person":      return "Profile"
-        case "plus":        return "Add New"
+        case "message":     return "Add New" // to jest chat xd
         default:            return "Home"
         }
     }
@@ -158,11 +185,11 @@ struct TabView: View {
                         .onAppear {
                             mapViewModel.fetchData(isCurrentGym: true)
                         }
-                case "chart.bar":
+                case "medal":
                     RankingView()
                 case "person":
                     ProfileView(userID: AuthManager.shared.userUID ?? "")
-                case "plus":
+                case "message":
                     GymChatView()
                 default:
                     //GymChatView()
@@ -198,11 +225,11 @@ struct TabView: View {
     
     private func getDefaultViewForTab(_ tab: String) -> String {
         switch tab {
-        case "house":           return "Home"
-        case "chart.bar":       return "Statistics"
-        case "person":          return "Profile"
-        case "plus":            return "Add New"
-        default:                return "Home"
+        case "house":       return "Home"
+        case "medal":       return "Statistics"
+        case "person":      return "Profile"
+        case "message":     return "Add New" // to jest chat xd
+        default:            return "Home"
         }
     }
 }

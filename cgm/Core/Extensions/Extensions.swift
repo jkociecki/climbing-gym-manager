@@ -181,6 +181,6 @@ extension Color {
         let g = Int((components[1] * 255).rounded())
         let b = Int((components[2] * 255).rounded())
         
-        return String(format: "%02X%02X%02X", r, g, b)
+        return String(format: "02X%02X%02X", r, g, b)
     }
 }

@@ -28,6 +28,7 @@ enum TopBarButton {
     case close(action: () -> Void)
     case notification(action: () -> Void)
     case custom(icon: String, action: () -> Void)
+    case customRotated(icon: String, action: () -> Void)
     
     static func menuButton(showSideMenu: Binding<Bool>) -> TopBarButton {
         .menu {
@@ -73,6 +74,13 @@ enum TopBarButton {
                 Image(systemName: icon)
                     .topBarIcon()
             }
+            
+        case .customRotated(let icon, let action):
+            Button(action: action) {
+                Image(systemName: icon)
+                    .topBarIcon()
+            }.rotationEffect(Angle(degrees: 90.0))
+
         }
     }
 }
@@ -81,16 +89,21 @@ struct TopBar: View {
     var config: TopBarConfig
     
     var body: some View {
+        let top = CGFloat(50)
+        let bot = CGFloat(10)
         VStack(spacing: 0) {
             HStack {
                 config.leftButton.buttonView()
                     .padding(.leading)
-                
+                    .padding(.top, top)
+                    .padding(.bottom, bot)
                 Spacer()
                 
 
                 Text(config.title)
                     .font(.headline)
+                    .padding(.top, top)
+                    .padding(.bottom, bot)
                     .foregroundColor(.white)
                 
                 Spacer()
@@ -98,13 +111,16 @@ struct TopBar: View {
                 if let rightButton = config.rightButton {
                     rightButton.buttonView()
                         .padding(.trailing)
-                } else {
-                    Color.clear
-                        .frame(width: 44)
+                        .padding(.top, top)
+                        .padding(.bottom, bot)                } else {
+                            Color.clear
+                                .frame(width: 44, height: 44)
+                                .padding(.trailing)
+                                .padding(.top, top)
+                                .padding(.bottom, bot)
                 }
             }
-            .frame(height: 80)
-            .padding(.vertical, 30)
+            //.padding(.top, 40)
             
 
             if let additionalContent = config.additionalContent {

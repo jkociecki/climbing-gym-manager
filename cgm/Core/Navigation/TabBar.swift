@@ -33,7 +33,7 @@ struct CustomTabBar: View {
         .padding(.bottom, getSafeArea().bottom == 0 ? 20 : getSafeArea().bottom)
     }
     
-    var tabs = ["house", "chart.bar", "plus", "person"]
+    var tabs = ["house", "medal", "message", "person"]
 }
 
 struct TabBarButton: View {
