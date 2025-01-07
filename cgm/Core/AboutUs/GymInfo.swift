@@ -48,6 +48,7 @@ struct GymInfoView: View {
     @State private var isOpeningHoursExpanded = false
     @State private var isBouldersExpanded = false
     @StateObject private var model: GymInfoModel = GymInfoModel()
+    @Binding var isLoading: Bool
     let gym: GymModel
     
     @State private var region: MKCoordinateRegion = MKCoordinateRegion(
@@ -55,29 +56,30 @@ struct GymInfoView: View {
            span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
        )
     
-    init(gym: GymModel = GymModel.sample) {
+    init(gym: GymModel = GymModel.sample, isLoading: Binding<Bool>) {
             self.gym = gym
+            _isLoading = isLoading
     }
     
 
     
     var body: some View {
-        if model.isLoading {
-            ProgressView("Loading...")
-                .onAppear {
-                    Task {
-                        await model.loadData()
-                        await model.loadBoulders()
-                        await model.loadImagaes()
-                        region = MKCoordinateRegion(
-                            center: model.address.coordinates,
-                            span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
-                        )
-                        model.isLoading = false
-                    }
-                }
-            
-        }else{
+//        if model.isLoading {
+//            ProgressView("Loading...")
+//                .onAppear {
+//                    Task {
+//                        await model.loadData()
+//                        await model.loadBoulders()
+//                        await model.loadImagaes()
+//                        region = MKCoordinateRegion(
+//                            center: model.address.coordinates,
+//                            span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+//                        )
+//                        model.isLoading = false
+//                    }
+//                }
+//            
+//        }else{
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(spacing: 24) {
@@ -141,7 +143,19 @@ struct GymInfoView: View {
                     }
                 }
             }
-        }
+            .onAppear{
+                    Task {
+                        isLoading = true
+                        await model.loadData()
+                        await model.loadBoulders()
+                        await model.loadImagaes()
+                        region = MKCoordinateRegion(
+                            center: model.address.coordinates,
+                            span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+                        )
+                        isLoading = false
+                    }
+            }
     }
     
     private var currentDay: String {
@@ -517,9 +531,7 @@ extension String {
 
 struct GymDetailsView_Previews: PreviewProvider {
     static var previews: some View {
-        NavigationView {
-            GymInfoView()
-        }
+            MainView()
     }
 }
 

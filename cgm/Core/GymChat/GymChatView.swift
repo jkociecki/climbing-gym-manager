@@ -10,9 +10,15 @@
 import SwiftUI
 
 struct GymChatView: View {
-    @StateObject private var gymChatModel = GymChatModel()
+    @StateObject private var gymChatModel: GymChatModel
     @State private var selectedPost: Post? = nil
     @State private var currentUserID: Int? = nil
+    @Binding var isLoading: Bool
+
+    init(isLoading: Binding<Bool>) {
+        _isLoading = isLoading
+        _gymChatModel = StateObject(wrappedValue: GymChatModel(isLoading: isLoading))
+    }
     
     var body: some View {
         ScrollView {

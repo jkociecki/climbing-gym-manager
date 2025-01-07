@@ -9,6 +9,8 @@ struct MainView: View {
     @State private var showAddNewPost:      Bool = false
     @State private var isAuthenticated:     Bool = true
     @State private var isWhileZooming:      Bool = false
+    @State private var isLoading:           Bool = false
+    @State private var isAuthenhicating:    Bool = false
     @StateObject private var mapViewModel: MapViewModel = MapViewModel(isCurrentGym: false)
     @StateObject private var authManager = AuthManager.shared
     
@@ -17,7 +19,12 @@ struct MainView: View {
     
     var body: some View {
          Group {
-             if authManager.isAuthenticated {
+             if isAuthenhicating {
+                 ProgressView("Checking authentication...")
+                                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                     .background(Color.white)
+             }
+            else if authManager.isAuthenticated {
                  ZStack {
                      TopBar(config: getTopBarConfig())
                          .zIndex(1)
@@ -28,7 +35,7 @@ struct MainView: View {
                      
                      TabView(selectedTab: $selectedTab,
                             selectedView: $selectedView,
-                            mapViewModel: mapViewModel)
+                             isLoading: $isLoading, mapViewModel: mapViewModel)
                          .frame(maxWidth: .infinity, maxHeight: .infinity)
                          .ignoresSafeArea()
                          .zIndex(0)
@@ -72,7 +79,9 @@ struct MainView: View {
              }
          }
          .task {
+             isAuthenhicating = true
              await authManager.checkAuth()
+             isAuthenhicating = false
          }
      }
     
@@ -82,14 +91,16 @@ struct MainView: View {
             return TopBarConfig(
                 title: UserDefaults.standard.string(forKey: "selectedGymName") ?? "Gym Name",
                 leftButton: .menuButton(showSideMenu: $showSideMenu),
-                rightButton: .custom(icon: "slider.vertical.3") { showFilterPanel.toggle() }
+                rightButton: .custom(icon: "slider.vertical.3") { showFilterPanel.toggle() },
+                isLoading: $isLoading
                 
             )
             
         case "Statistics":
             return TopBarConfig(
                 title: UserDefaults.standard.string(forKey: "selectedGymName").map { "\($0) Ranking" } ?? "Gym Ranking",
-                leftButton: .menuButton(showSideMenu: $showSideMenu)
+                leftButton: .menuButton(showSideMenu: $showSideMenu),
+                isLoading: $isLoading
             )
 
             
@@ -97,45 +108,52 @@ struct MainView: View {
             return TopBarConfig(
                 title: "Profile",
                 leftButton: .menuButton(showSideMenu: $showSideMenu),
-                rightButton: .none
+                rightButton: .none,
+                isLoading: $isLoading
             )
             
             
         case "Gym Owner Panel":
             return TopBarConfig(
                 title: "Gym Administrator Panel",
-                leftButton: .menuButton(showSideMenu: $showSideMenu)
+                leftButton: .menuButton(showSideMenu: $showSideMenu),
+                isLoading: $isLoading
             )
       
         case "Profile Settings":
             return TopBarConfig(
                 title: "Profile Settings",
-                leftButton: .menuButton(showSideMenu: $showSideMenu)
+                leftButton: .menuButton(showSideMenu: $showSideMenu),
+                isLoading: $isLoading
             )
             
         case "About Gym":
             return TopBarConfig(
                 title: "About" +
                 (UserDefaults.standard.string(forKey: "selectedGymName") ?? "Gym"),
-                leftButton: .menuButton(showSideMenu: $showSideMenu)
+                leftButton: .menuButton(showSideMenu: $showSideMenu),
+                isLoading: $isLoading
             )
 
         case "Switch Gym":
             return TopBarConfig(
                 title: "Select gym",
-                leftButton: .menuButton(showSideMenu: $showSideMenu)
+                leftButton: .menuButton(showSideMenu: $showSideMenu),
+                isLoading: $isLoading
             )
             
         case "Settings":
             return TopBarConfig(
                 title: "Settings",
-                leftButton: .menuButton(showSideMenu: $showSideMenu)
+                leftButton: .menuButton(showSideMenu: $showSideMenu),
+                isLoading: $isLoading
             )
             
         case "Your Posts:":
             return TopBarConfig(
                 title: "Gym Administrator Panel",
-                leftButton: .menuButton(showSideMenu: $showSideMenu)
+                leftButton: .menuButton(showSideMenu: $showSideMenu),
+                isLoading: $isLoading
             )
             
 
@@ -145,13 +163,16 @@ struct MainView: View {
                 leftButton: .menuButton(showSideMenu: $showSideMenu),
                 rightButton: .custom(icon: "plus.bubble", action: {
                     showAddNewPost.toggle()
-                })
+                }),
+                isLoading: $isLoading
             )
             
         default:
             return TopBarConfig(
                 title: "",
-                leftButton: .menuButton(showSideMenu: $showSideMenu)            )
+                leftButton: .menuButton(showSideMenu: $showSideMenu),
+                isLoading: $isLoading
+            )
         }
     }
     
@@ -171,6 +192,7 @@ struct MainView: View {
 struct TabView: View {
     @Binding var selectedTab: String
     @Binding var selectedView: String
+    @Binding var isLoading:     Bool
     @ObservedObject var mapViewModel: MapViewModel
     @StateObject private var authManager = AuthManager.shared
     @State private var tapPosistion:        CGPoint = CGPoint(x: 0, y: 0)
@@ -181,31 +203,31 @@ struct TabView: View {
             if isTabBarSelection {
                 switch selectedTab {
                 case "house":
-                    MapView(mapViewModel: mapViewModel, isTapInteractive: true, tapPosistion: $tapPosistion, isEdit: false)
+                    MapView(mapViewModel: mapViewModel, isTapInteractive: true, tapPosistion: $tapPosistion, isEdit: false, isLoading: $isLoading)
                         .onAppear {
                             mapViewModel.fetchData(isCurrentGym: true)
                         }
                 case "medal":
-                    RankingView()
+                    RankingView(loading: $isLoading)
                 case "person":
-                    ProfileView(userID: AuthManager.shared.userUID ?? "")
+                    ProfileView(userID: AuthManager.shared.userUID ?? "", isLoading: $isLoading)
                 case "message":
-                    GymChatView()
+                    GymChatView(isLoading: $isLoading)
                 default:
                     //GymChatView()
-                    MapView(mapViewModel: mapViewModel, isTapInteractive: true, tapPosistion: $tapPosistion, isEdit: false)
+                    MapView(mapViewModel: mapViewModel, isTapInteractive: true, tapPosistion: $tapPosistion, isEdit: false, isLoading: $isLoading)
                 }
             }
             else {
                 switch selectedView {
                 case "Profile Settings":
-                    SetUpAccountView()
+                    SetUpAccountView(isLoading: $isLoading)
                 case "Your Posts":
                     AddNewView()
                 case "About Gym":
-                    GymInfoView()
+                    GymInfoView(isLoading: $isLoading)
                 case "Switch Gym":
-                    SelectGymView()
+                    SelectGymView(isLoading: $isLoading)
                  case "Settings":
                     SettingsView()
                 case "Logout":

@@ -9,8 +9,14 @@ import SwiftUI
 
 struct YourPostsView: View {
     let userID: String
-    @StateObject private var gymChatModel = GymChatModel()
     @State private var selectedPost: Post? = nil
+    @State private var isLoading: Bool = false
+    @StateObject private var gymChatModel: GymChatModel
+
+    init(userID: String) {
+        self.userID = userID
+        _gymChatModel = StateObject(wrappedValue: GymChatModel(isLoading: .constant(false)))
+    }
     
     var body: some View {
         NavigationView {
@@ -89,6 +95,4 @@ struct YourPostsView: View {
     }
 }
 
-#Preview {
-    YourPostsView(userID: "3")
-}
+

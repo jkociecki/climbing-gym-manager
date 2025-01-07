@@ -19,6 +19,7 @@ struct SetUpAccountView: View {
     @State var password: String = ""
     @State var selectedGender: Gender? = nil
     @State private var showConfirmationAlert: Bool = false
+    @Binding var isLoading: Bool
         
     var body: some View {
         ScrollView{
@@ -132,6 +133,7 @@ struct SetUpAccountView: View {
         .frame(maxHeight: .infinity)
         .onAppear {
             Task {
+                isLoading = true
                 await setUpAccountModel.fetchUserData()
                 // Przenieś przypisanie wartości tutaj, po pobraniu danych
                 if let userData = setUpAccountModel.userData {
@@ -146,6 +148,7 @@ struct SetUpAccountView: View {
                         }
                     }
                 }
+                isLoading = false
             }
         }
         .alert(isPresented: $showConfirmationAlert) {
@@ -329,8 +332,4 @@ struct GenderButton: View {
             }
             .animation(.spring(duration: 0.8), value: isSelected)
     }
-}
-#Preview{
-    //SelectGender()
-    SetUpAccountView()
 }

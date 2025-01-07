@@ -20,10 +20,12 @@ struct ProfileView: View {
     @StateObject var chartsViewModel: ChartsViewModel
     @StateObject var topBouldersViewModel: TopBouldersManager
     @State private var topBoulders: [TopTenBoulder] = []
+    @Binding var isLoading: Bool
 
-    init(userID: String) {
+    init(userID: String, isLoading: Binding<Bool>) {
         _chartsViewModel = StateObject(wrappedValue: ChartsViewModel(userID: userID))
         _topBouldersViewModel = StateObject(wrappedValue: TopBouldersManager(userID: userID))
+        _isLoading = isLoading
     }
 
     var body: some View {
@@ -53,8 +55,10 @@ struct ProfileView: View {
         .frame(maxHeight: .infinity)
         .onAppear {
             Task {
+                isLoading = true
                 await chartsViewModel.generateChartData()
                 await loadTopBoulders()  // Fetch top boulders when the view appears
+                isLoading = false
             }
         }
     }
@@ -357,9 +361,9 @@ struct AvgPointsBox: View
     }
 }
 
-struct ProfileView_Previews: PreviewProvider {
-    static var previews: some View {
-        ProfileView(userID: "A42FC0DC-FF3A-40B7-99E0-66DA9AC67220")
-    }
-}
+//struct ProfileView_Previews: PreviewProvider {
+//    static var previews: some View {
+//        ProfileView(userID: "A42FC0DC-FF3A-40B7-99E0-66DA9AC67220")
+//    }
+//}
 

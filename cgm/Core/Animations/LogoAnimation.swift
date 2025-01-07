@@ -17,7 +17,7 @@ struct AnimatedLetter: View {
     
     var body: some View {
         Text(letter)
-            .font(.system(size: size, weight: .bold))
+            .font(.custom("Righteous-Regular", size: 60))
             .foregroundColor(color)
             .opacity(isAnimating ? 1 : 0)
             .offset(y: isAnimating ? 0 : size * 0.8)
@@ -127,8 +127,16 @@ struct AnimatedLoader: View {
     }
 }
 
-
+struct FullScreenAnimationLoader: View {
+    var size: Int
+    var body: some View {
+        ZStack {
+            Color(.systemBackground)
+            AnimatedLoader(size: 60)
+        }
+    }
+}
 
 #Preview{
-    AnimatedLoader(size: 60)
+    FullScreenAnimationLoader(size: 60)
 }

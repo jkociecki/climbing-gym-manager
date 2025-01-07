@@ -13,6 +13,7 @@ struct RankingView: View {
     @State private var selectedGender = 0  // 0 = BOTH, 1 = MAN, 2 = WOMAN
     @State private var searchText = ""
     @State private var isLoading = true  // Track loading state
+    @Binding var loading: Bool
     
     var filteredUsers: [RankingUser] {
         let genderFilteredUsers: [RankingUser]
@@ -62,16 +63,18 @@ struct RankingView: View {
         .onAppear {
             Task {
                 do {
-                    // Show loading indicator
+                    loading = true
                     isLoading = true
                     
                     rankingUsersData = try await RankingManager().generateRanking()
                     
                     // Hide loading indicator once data is fetched
                     isLoading = false
+                    loading = false
                 } catch {
                     print("Błąd ładowania rankingu: \(error)")
                     isLoading = false
+                    loading = false
                 }
             }
         }

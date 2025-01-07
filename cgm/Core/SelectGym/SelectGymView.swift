@@ -11,7 +11,13 @@ import Macaw
 struct SelectGymView: View {
     @State private var searchText: String = ""
     @State private var favoriteGyms: Set<Int> = []
-    @StateObject private var selectGymModel: SelectGymModel = SelectGymModel()
+    @StateObject private var selectGymModel: SelectGymModel
+    @Binding var isLoading: Bool
+    
+    init(isLoading: Binding<Bool>) {
+        _isLoading = isLoading
+        _selectGymModel = StateObject(wrappedValue: SelectGymModel(isLoading: isLoading))
+    }
 
     var filteredGyms: [GymD] {
         let gyms = selectGymModel.climbingGyms
@@ -83,12 +89,6 @@ struct SelectGymView: View {
         } else {
             favoriteGyms.insert(gym.id)
         }
-    }
-}
-
-struct SelectGymView_Preview: PreviewProvider {
-    static var previews: some View {
-        SelectGymView()
     }
 }
 

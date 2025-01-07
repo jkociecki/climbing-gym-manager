@@ -11,13 +11,15 @@ struct MapView: View {
     @State var transform: CGAffineTransform
     @Binding var tapPosition: CGPoint
     @State private var isWhileZooming:      Bool = false
+    @Binding private var isLoading:           Bool
 
-    init(mapViewModel: MapViewModel, isTapInteractive: Bool, tapPosistion: Binding<CGPoint>, isEdit: Bool) {
+    init(mapViewModel: MapViewModel, isTapInteractive: Bool, tapPosistion: Binding<CGPoint>, isEdit: Bool, isLoading: Binding<Bool>) {
         _transform = State(initialValue: CGAffineTransform(scaleX: defaultScale, y: defaultScale))
         self.mapViewModel = mapViewModel
         self.isTapInteractive = isTapInteractive
         self._tapPosition = tapPosistion
         self.isEdit = isEdit
+        self._isLoading = isLoading
     }
     
     var body: some View {
@@ -80,6 +82,12 @@ struct MapView: View {
                 BoulderInfoView(viewModel: BoulderInfoModel(boulderID: boulderId, userID: AuthManager.shared.userUID ?? ""), boulders: $mapViewModel.boulders)
             }
             
+        }
+        .onAppear{
+            isLoading = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            isLoading = false
+            }
         }
     }
     

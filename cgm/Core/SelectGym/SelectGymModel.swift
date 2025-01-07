@@ -6,23 +6,29 @@
 //
 
 import Foundation
+import SwiftUICore
 
 class SelectGymModel: ObservableObject {
     @Published var selectedGym: Int? = nil
     @Published var climbingGyms: [GymD] = []
     @Published var error: Error? = nil
+    @Binding var isLoading: Bool
     
-    init() {
+    init(isLoading: Binding<Bool>) {
+        _isLoading = isLoading
         getStoredData() // Pobranie wybranego Gym z UserDefaults
         Task { await fetchClimbingGymsData() }
     }
     
     func fetchClimbingGymsData() async {
         do {
+            isLoading = true
             let session = try await AuthManager.shared.client.auth.session
             let data = try await DatabaseManager.shared.getGyms()
             self.climbingGyms = data
+            isLoading = false
         } catch {
+            isLoading = false
             self.error = error // Informacja o błędzie
             print("Error fetching gyms: \(error)")
         }

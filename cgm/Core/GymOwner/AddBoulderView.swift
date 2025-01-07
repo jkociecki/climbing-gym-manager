@@ -256,6 +256,7 @@ struct FullScreenMapView: View {
     @Binding var selectedColor: String?
     @Binding var sector: String
     @Binding var difficulty: String
+    @State private var isloading: Bool = false
 
     var body: some View {
         NavigationView {
@@ -275,7 +276,7 @@ struct FullScreenMapView: View {
                 .background(Color(.systemBackground))
                 .zIndex(2)
                 
-                MapView(mapViewModel: mapViewModel, isTapInteractive: false, tapPosistion: $tapPosistion, isEdit: false)
+                MapView(mapViewModel: mapViewModel, isTapInteractive: false, tapPosistion: $tapPosistion, isEdit: false, isLoading: $isloading)
             }
             .onChange(of: tapPosistion) { _, newValue in
                 if let index = mapViewModel.boulders.firstIndex(where: { $0.id == -1 }) {

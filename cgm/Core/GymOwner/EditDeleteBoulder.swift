@@ -4,6 +4,7 @@ import SwiftUI
 struct selectBoulder: View {
     @State var tappos: CGPoint = CGPoint()
     @Binding var isPresented: Bool
+    @State var isLoading = false
 
     
     var body: some View {
@@ -21,7 +22,8 @@ struct selectBoulder: View {
                     mapViewModel: MapViewModel(isCurrentGym: false),
                     isTapInteractive: false,
                     tapPosistion: $tappos,
-                    isEdit: true
+                    isEdit: true,
+                    isLoading: $isLoading
                 )
                 .frame(width: UIScreen.main.bounds.width - 100, height: UIScreen.main.bounds.height - 200)
                 .clipShape(RoundedRectangle(cornerRadius: 15))

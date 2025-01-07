@@ -25,8 +25,12 @@ struct Post: Identifiable, Equatable {
 
 class GymChatModel: ObservableObject {
     @Published private(set) var posts: [Post] = []
-    @Published private(set) var isLoading: Bool = false
+    @Binding var isLoading: Bool
     @Published private(set) var hasMorePosts: Bool = true
+    
+    init(isLoading: Binding<Bool>){
+        self._isLoading = isLoading
+    }
     
     private var loadingTask: Task<Void, Never>?
     
