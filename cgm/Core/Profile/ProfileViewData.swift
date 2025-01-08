@@ -1,13 +1,22 @@
 import Foundation
 
 // Model danych dla TopTenBoulder
-struct TopTenBoulder: Identifiable {
+struct TopTenBoulder: Identifiable, Equatable{
     var id = UUID()
     var color: String
     var level: String
     var whereBouler: String
     var fleshPoints: Int
     var pointsForBoulder: Int
+    
+    static func == (lhs: TopTenBoulder, rhs: TopTenBoulder) -> Bool {
+        return lhs.id == rhs.id &&
+               lhs.level == rhs.level &&
+               lhs.whereBouler == rhs.whereBouler &&
+               lhs.color == rhs.color &&
+               lhs.fleshPoints == rhs.fleshPoints &&
+               lhs.pointsForBoulder == rhs.pointsForBoulder
+    }
 }
 
 
@@ -32,17 +41,16 @@ class TopBouldersManager: ObservableObject {
     let userID: String
     var show_for_all_gyms: Bool?
 
-    init(userID: String, show_for_all_gyms: Bool? = nil) {
+    init(userID: String, show_for_all_gyms: Bool = false) {
         self.userID = userID
         self.show_for_all_gyms = show_for_all_gyms
     }
     
     func loadData() async throws {
-        guard !isDataLoaded else { return }
         if show_for_all_gyms == true {
-            toppedBoulders = try await DatabaseManager.shared.getCurrentGymToppedByForProfileForAllGyms(forUserID: userID)
+            toppedBoulders = try await db.getCurrentGymToppedByForProfileForAllGyms(forUserID: userID)
         } else {
-            toppedBoulders = try await DatabaseManager.shared.getCurrentGymToppedByForProfile(forUserID: userID)
+            toppedBoulders = try await db.getCurrentGymToppedByForProfile(forUserID: userID)
         }
         isDataLoaded = true
     }
@@ -52,7 +60,6 @@ class TopBouldersManager: ObservableObject {
         let tops = toppedBoulders.count
         return (flashes, tops)
     }
-    
     
     func fetchVisitedDates() -> Set<String> {
         let dates = toppedBoulders.compactMap { topped -> String? in
@@ -70,7 +77,6 @@ class TopBouldersManager: ObservableObject {
             try await loadData()
         }
         
-        
         let dateCutoff = Calendar.current.date(byAdding: .month, value: -2, to: Date()) ?? Date()
         let recentBoulders = toppedBoulders.filter { topped in
             guard let createdAtString = topped.created_at,
@@ -87,7 +93,7 @@ class TopBouldersManager: ObservableObject {
             return TopTenBoulder(
                 color: topped.color,
                 level: topped.difficulty,
-                whereBouler: topped.name ?? "Unkown",
+                whereBouler: topped.name ?? "Unknown",
                 fleshPoints: flashBonus,
                 pointsForBoulder: totalPoints
             )
@@ -96,4 +102,3 @@ class TopBouldersManager: ObservableObject {
         return topBoulders.sorted(by: { $0.pointsForBoulder > $1.pointsForBoulder }).prefix(10).map { $0 }
     }
 }
-

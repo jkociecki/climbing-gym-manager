@@ -29,9 +29,13 @@ struct MainView: View {
                          .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                          .padding(.top, -5)
                      
-                     TabView(selectedTab: $selectedTab,
-                            selectedView: $selectedView,
-                             isLoading: $isLoading, mapViewModel: mapViewModel)
+                     TabView(
+                         selectedTab: $selectedTab,
+                         selectedView: $selectedView,
+                         isLoading: $isLoading,
+                         show_data_all_gyms: $show_data_all_gyms,
+                         mapViewModel: mapViewModel
+                     )
                          .frame(maxWidth: .infinity, maxHeight: .infinity)
                          .ignoresSafeArea()
                          .zIndex(0)
@@ -194,6 +198,7 @@ struct TabView: View {
     @Binding var selectedTab: String
     @Binding var selectedView: String
     @Binding var isLoading:     Bool
+    @Binding var show_data_all_gyms: Bool
     @ObservedObject var mapViewModel: MapViewModel
     @StateObject private var authManager = AuthManager.shared
     @State private var tapPosistion:        CGPoint = CGPoint(x: 0, y: 0)
@@ -211,7 +216,11 @@ struct TabView: View {
                 case "medal":
                     RankingView(loading: $isLoading)
                 case "person":
-                    ProfileView(userID: AuthManager.shared.userUID ?? "", isLoading: $isLoading)
+                    ProfileView(
+                        userID: AuthManager.shared.userUID ?? "",
+                        isLoading: $isLoading,
+                        show_data_all_gyms: $show_data_all_gyms
+                    )
                 case "message":
                     GymChatView(isLoading: $isLoading)
                 default:

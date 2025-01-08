@@ -21,11 +21,13 @@ struct ProfileView: View {
     @StateObject var topBouldersViewModel: TopBouldersManager
     @State private var topBoulders: [TopTenBoulder] = []
     @Binding var isLoading: Bool
-
-    init(userID: String, isLoading: Binding<Bool>, show_for_all_gyms: Bool? = nil) {
-        _chartsViewModel = StateObject(wrappedValue: ChartsViewModel(userID: userID, show_for_all_gyms: show_for_all_gyms))
-        _topBouldersViewModel = StateObject(wrappedValue: TopBouldersManager(userID: userID, show_for_all_gyms: show_for_all_gyms))
+    @Binding var show_data_all_gyms: Bool
+    
+    init(userID: String, isLoading: Binding<Bool>, show_data_all_gyms: Binding<Bool>) {
+        _chartsViewModel = StateObject(wrappedValue: ChartsViewModel(userID: userID, show_for_all_gyms: show_data_all_gyms.wrappedValue))
+        _topBouldersViewModel = StateObject(wrappedValue: TopBouldersManager(userID: userID, show_for_all_gyms: show_data_all_gyms.wrappedValue))
         _isLoading = isLoading
+        _show_data_all_gyms = show_data_all_gyms
     }
 
     var body: some View {
@@ -34,9 +36,11 @@ struct ProfileView: View {
                 VStack(spacing: 16) {
                     UserProfileHeader(
                         userID: chartsViewModel.userID,
-                        statsDescription: "stats and progress"
+                        statsDescription: show_data_all_gyms ? "stats and progress for all gyms" : "stats and progress"
                     )
-                    DisplayUserStats(topBouldersViewModel: topBouldersViewModel)
+                    DisplayUserStats(
+                        topBouldersViewModel: topBouldersViewModel,
+                        show_data_all_gyms: $show_data_all_gyms)
                 }
                 .padding(.horizontal)
                 
@@ -48,6 +52,7 @@ struct ProfileView: View {
                     SwitchableViewProfile(viewModel: chartsViewModel)
                     
                     TopTenBoulders(topBoulders: $topBoulders)
+
                 }
             }
             .padding(.vertical, 140)
@@ -61,6 +66,26 @@ struct ProfileView: View {
                 isLoading = false
             }
         }
+        .onChange(of: show_data_all_gyms) { newValue in
+            Task {
+                isLoading = true
+                
+                chartsViewModel.show_for_all_gyms = newValue
+                topBouldersViewModel.show_for_all_gyms = newValue
+                
+                await chartsViewModel.generateChartData()
+                
+                do {
+                    try await topBouldersViewModel.loadData()
+                    await loadTopBoulders()
+                } catch {
+                    print("Failed to load data: \(error)")
+                }
+                
+                isLoading = false
+            }
+        }
+
     }
     
     private func loadTopBoulders() async {
@@ -172,6 +197,8 @@ struct UserProfileHeader: View {
 
 struct DisplayUserStats: View {
     @ObservedObject var topBouldersViewModel: TopBouldersManager
+    @Binding var show_data_all_gyms: Bool  // Nowy Binding
+
     @State private var flashes: Int = 0
     @State private var tops: Int = 0
     @State private var visits: Int = 0  // Track visits
@@ -181,11 +208,17 @@ struct DisplayUserStats: View {
         HStack(spacing: 16) {
             StatBox(title: "\(tops) Tops", subtitle: sinceText)
             StatBox(title: "\(flashes) Flashes", subtitle: sinceText)
-            StatBox(title: "\(visits) Visits", subtitle: sinceText)  // Display visits
+            StatBox(title: "\(visits) Visits", subtitle: sinceText)
         }
         .onAppear {
             Task {
-                await loadUserStats()  // Load data when the view appears
+                await loadUserStats()
+            }
+        }
+        .onChange(of: show_data_all_gyms) { newValue in
+            Task {
+
+                await loadUserStats()
             }
         }
     }
@@ -217,6 +250,7 @@ struct DisplayUserStats: View {
         }
     }
 }
+
 
 struct SwitchableButtonProfile: View
 {
@@ -269,6 +303,7 @@ struct SwitchableViewProfile: View {
 struct TopTenBoulders: View {
     @Binding var topBoulders: [TopTenBoulder]
     @State private var isLoading = true
+    @State private var avgPoints: Int = 0 // Store the average points here
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -287,7 +322,7 @@ struct TopTenBoulders: View {
                     
                     Spacer()
                     
-                    AvgPointsBox(title: "\(calculateAvgPoints())", subtitle: "points in average")
+                    AvgPointsBox(title: "\(avgPoints)", subtitle: "points in average")
                 }
                 
                 ForEach(topBoulders.indices, id: \.self) { index in
@@ -323,17 +358,23 @@ struct TopTenBoulders: View {
         }
         .onAppear {
             isLoading = false
+            calculateAvgPoints()
+        }
+        .onChange(of: topBoulders) { _ in
+            calculateAvgPoints()
         }
         .padding(.horizontal, 16)
     }
-    
-    private func calculateAvgPoints() -> Int {
-        guard !topBoulders.isEmpty else { return 0 }
+
+    private func calculateAvgPoints() {
+        guard !topBoulders.isEmpty else {
+            avgPoints = 0
+            return
+        }
         let totalPoints = topBoulders.reduce(0) { $0 + $1.pointsForBoulder }
-        return totalPoints / topBoulders.count
+        avgPoints = totalPoints / topBoulders.count
     }
 }
-
 
 
 struct AvgPointsBox: View
