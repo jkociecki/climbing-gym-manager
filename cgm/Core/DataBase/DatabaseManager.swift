@@ -425,6 +425,7 @@ class DatabaseManager {
     }
     
     func getPaginatedPostsForUser(uid: String, page: Int) async throws -> [PostsD] {
+        let currentGymId = UserDefaults.standard.string(forKey: "selectedGym")
         let pageSize = 10
         let start = (page - 1) * pageSize
         
@@ -432,6 +433,7 @@ class DatabaseManager {
             .from("Posts")
             .select("*")
             .eq("user_id", value: uid)
+            .eq("gym_id", value: currentGymId)
             .range(from: start, to: start + (pageSize - 1))
             .order("post_id", ascending: false)
             .execute()

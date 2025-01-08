@@ -106,13 +106,13 @@ struct PostCommentsView: View {
                         Text(post.userName)
                             .font(.custom("Inter18pt-Regular", size: 15))
                         
-                        Text(post.date)
+                        Text((formatDateString(post.date, dateFormat: "dd/MM/yyyy, HH:mm")))
                             .font(.custom("Inter18pt-Light", size: 12))
                             .foregroundColor(.gray)
                     }
                     Spacer()
                     
-                    Text("5 min ago")
+                    Text(timeAgo(from: post.date))
                         .font(.custom("Inter18pt-Light", size: 12))
                         .foregroundColor(.gray)
                 }

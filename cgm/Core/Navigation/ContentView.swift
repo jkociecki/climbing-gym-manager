@@ -150,9 +150,9 @@ struct MainView: View {
                 isLoading: $isLoading
             )
             
-        case "Your Posts:":
+        case "Your Posts":
             return TopBarConfig(
-                title: "Gym Administrator Panel",
+                title: "Your posts",
                 leftButton: .menuButton(showSideMenu: $showSideMenu),
                 isLoading: $isLoading
             )

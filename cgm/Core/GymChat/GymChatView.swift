@@ -154,7 +154,7 @@ struct PostView: View {
                         .font(.custom("Inter18pt-Regular", size: 15))
                     
                     // Formatowanie daty bez mikrosekund, tylko dzień, miesiąc i rok
-                    Text(formatDate2(post.date))
+                    Text(formatDateString(post.date, dateFormat: "d MMM yyyy"))
                         .font(.custom("Inter18pt-Light", size: 12))
                         .foregroundColor(.gray)
                         

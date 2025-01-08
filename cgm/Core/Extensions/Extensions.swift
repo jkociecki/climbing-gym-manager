@@ -111,22 +111,20 @@ func formatDate(_ date: Date) -> String {
 }
 
 
-func formatDate2(_ dateString: String) -> String {
+func formatDateString(_ dateString: String, dateFormat: String) -> String {
     let dateFormatter = DateFormatter()
     dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZZZZZ"
     dateFormatter.locale = Locale(identifier: "en_US_POSIX")
-    
     if let date = dateFormatter.date(from: dateString) {
-        // Zwracamy datę w formacie "d MMM yyyy"
         let displayFormatter = DateFormatter()
-        displayFormatter.dateFormat = "d MMM yyyy"
+        displayFormatter.dateFormat = dateFormat
         displayFormatter.locale = Locale(identifier: "en_US_POSIX")
         return displayFormatter.string(from: date)
     } else {
-        print("Nie udało się sformatować daty: \(dateString)")
-        return dateString
+        return "Invalid date format"
     }
 }
+
 
 
 
