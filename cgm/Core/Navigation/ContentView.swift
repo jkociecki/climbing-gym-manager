@@ -78,6 +78,9 @@ struct MainView: View {
              await authManager.checkAuth()
              isAuthenhicating = false
          }
+         .onTapGesture {
+             hideKeyboard()
+         }
      }
     
     private func getTopBarConfig() -> TopBarConfig {

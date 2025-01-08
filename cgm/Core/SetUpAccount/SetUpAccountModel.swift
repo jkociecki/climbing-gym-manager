@@ -8,6 +8,8 @@
 import Foundation
 import Supabase
 
+
+@MainActor
 class SetUpAccountModel: ObservableObject {
     @Published var userData: User? = nil
     @Published var errorMessage: String? = nil

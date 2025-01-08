@@ -13,10 +13,11 @@ struct GestureTransformView: UIViewRepresentable {
     @Binding var paths:         [Sector]
     @Binding var prevTapPos:    CGPoint
     @Binding var isWhileZooming: Bool
-    var onAreaTapped:           ((Int, String) -> Void)?
     var isTapInteractive:       Bool
     @State private var viewSize: CGSize = .zero
     @State private var initialTransform: CGAffineTransform = .identity
+    var onAreaTapped:           ((Int, String) -> Void)?
+
 
     func makeUIView(context: Context) -> UIView {
         let view = UIView()
@@ -107,6 +108,7 @@ extension GestureTransformView {
         }
         
         @objc func handleTap(_ gesture: UITapGestureRecognizer) {
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
             guard let gestureView = gesture.view else { return }
 
                 let location = gesture.location(in: gestureView)

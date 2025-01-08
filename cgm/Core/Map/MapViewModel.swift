@@ -15,7 +15,7 @@ enum FlashDoneNone{
     case Flash, Done, NotDone
 }
 
-
+@MainActor
 class MapViewModel: ObservableObject{
     @Published var map:                 String = ""
     @Published var selectedSectorIndex: Int?

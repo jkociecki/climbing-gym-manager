@@ -61,6 +61,9 @@ struct YourPostsView: View {
                 await loadUserData()
             }
         }
+        .onDisappear{
+            hideKeyboard()
+        }
     }
 
     private func loadUserData() async {

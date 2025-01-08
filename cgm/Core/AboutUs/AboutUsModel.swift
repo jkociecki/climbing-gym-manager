@@ -8,6 +8,7 @@
 import Foundation
 import MapKit
 
+@MainActor
 class GymInfoModel: ObservableObject {
     @Published var name: String = ""
     @Published var description: String = ""

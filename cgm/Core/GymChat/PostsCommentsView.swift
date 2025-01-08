@@ -87,7 +87,9 @@ struct PostCommentsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
+            Spacer()
             VStack(alignment: .leading, spacing: 8) {
+                
                 HStack {
                     Image(uiImage: post.profilePicture ?? UIImage(named: "default_avatar")!)
                         .resizable()
@@ -155,7 +157,7 @@ struct PostCommentsView: View {
                 
                 Image(systemName: "paperplane")
                     .padding(.trailing, 20)
-                    .foregroundColor(Color.green)
+                    .foregroundColor(Color.czerwony)
                     .onTapGesture {
                         Task {
                             let currentUserID = try await DatabaseManager.shared.getCurrentUserDataBaseID()
@@ -226,7 +228,7 @@ struct CommentView: View {
             .padding()
             .background(
                 RoundedRectangle(cornerRadius: 15)
-                    .foregroundStyle(Color(.systemGray6))
+                    .foregroundStyle(Color(.systemGray5))
             )
             .padding(.trailing, 20)
             .padding(.top, 10)

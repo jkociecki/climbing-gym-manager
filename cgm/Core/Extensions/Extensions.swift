@@ -184,3 +184,10 @@ extension Color {
         return String(format: "02X%02X%02X", r, g, b)
     }
 }
+
+
+extension View {
+    func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+}

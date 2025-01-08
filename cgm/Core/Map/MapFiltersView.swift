@@ -10,6 +10,7 @@ struct MapFiltersView: View {
     @State private var selectedRange: ClosedRange<Int> = 0...allDifficulties.count - 1
     @State private var selectedColors: Set<String> = []
     @State var selectedSectors: Set<String> = []
+    @Binding var isShowing: Bool
     @ObservedObject var mapViewModel: MapViewModel
     @Environment(\.colorScheme) var colorScheme
     
@@ -114,6 +115,7 @@ struct MapFiltersView: View {
                 VStack(spacing: 10) {
                     Button {
                         mapViewModel.applyFilters(difficulties: selectedRange, colors: selectedColors, sectors: selectedSectors)
+                        isShowing = true
                     } label: {
                         Text("Apply")
                             .foregroundStyle(.white)
@@ -128,7 +130,12 @@ struct MapFiltersView: View {
                     }
                     
                     Button {
-                        mapViewModel.resetFilters()
+                       mapViewModel.resetFilters()
+                       isShowing = false
+                       selectedRange = 0...allDifficulties.count - 1
+                       selectedColors = []
+                       selectedSectors = []
+                        
                     } label: {
                         Text("Reset")
                             .foregroundStyle(.white)
@@ -260,7 +267,7 @@ struct SlidingFilterPanel: View {
                             .padding()
                         }
                         
-                        MapFiltersView(mapViewModel: mapViewModel, sectors: mapSectorNames())
+                        MapFiltersView(isShowing: $isShowing, mapViewModel: mapViewModel, sectors: mapSectorNames())
                     }
                     .frame(width: min(geometry.size.width * 0.85, 380))
                     .background(Color(UIColor.systemBackground))

@@ -44,7 +44,13 @@ struct MapView: View {
                     prevTapPos: $tapPosition,
                     isWhileZooming: $isWhileZooming,
                     isTapInteractive: isTapInteractive
-                )
+                ){ sectorIndex, sector_id in
+                    if mapViewModel.selectedSectorIndex == sectorIndex {
+                        mapViewModel.selectedSectorIndex = nil
+                    } else {
+                        mapViewModel.selectSector(index: sectorIndex, sector: mapViewModel.gymSectors[sectorIndex])
+                    }
+                }
                 .ignoresSafeArea()
             )
             
@@ -58,7 +64,7 @@ struct MapView: View {
                 let center = sector.paths[0].path.boundingRect
                 
                 Text(sector.id)
-                    .font(.custom("Righteous-Regular", size: 8))
+                    .font(.custom("Righteous-Regular", size: 12))
                     .foregroundStyle(.white)
                     .position(x: center.midX, y: center.midY)
                     .background(
@@ -79,13 +85,14 @@ struct MapView: View {
             if isEdit{
                 EditDeleteBoulder(boulderID: boulderId)
             }else{
-                BoulderInfoView(viewModel: BoulderInfoModel(boulderID: boulderId, userID: AuthManager.shared.userUID ?? ""), boulders: $mapViewModel.boulders)
+                BoulderInfoView(viewModel: BoulderInfoModel(boulderID: boulderId, userID: AuthManager.shared.userUID ?? ""),
+                                boulders: $mapViewModel.boulders)
             }
             
         }
         .onAppear{
             isLoading = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             isLoading = false
             }
         }
@@ -151,7 +158,7 @@ struct MapView: View {
     }
 
     struct BoulderView: View {
-        let boulder: Boulder // załóżmy że to jest twój model boulderu
+        let boulder: Boulder
         let isVisible: Bool
         let isZoomedIn: Bool
         let centerPosition: CGPoint
@@ -247,11 +254,6 @@ struct MapView: View {
         return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
     }
     
-    
-    
-    
-    
-    
 }
 
 extension Int: Identifiable {
@@ -267,7 +269,7 @@ struct SectorView: View {
                 ForEach(Array(sector.paths.enumerated()), id: \.offset) { _, pathWrapper in
                     PathView(path: pathWrapper.path,
                              defaultColor: pathWrapper.color,
-                             selectedColor: pathWrapper.color,
+                             selectedColor: pathWrapper.color.opacity(0.55),
                              isSelected: isSelected)
                 }
 
@@ -278,7 +280,7 @@ struct SectorView: View {
                     PathView(
                         path: pathWrapper.path,
                         defaultColor: pathWrapper.color,
-                        selectedColor: pathWrapper.color,
+                        selectedColor: pathWrapper.color.opacity(2),
                         isSelected: isSelected
                     )
                 }
@@ -299,6 +301,7 @@ struct PathView: View {
                   AnyShapeStyle(selectedColor) :
                   AnyShapeStyle(defaultColor))
             .overlay(path.stroke(Color.white, lineWidth: 1))
+            .animation(.easeInOut(duration: 0.3), value: isSelected) // Dodanie animacji
     }
 }
 
