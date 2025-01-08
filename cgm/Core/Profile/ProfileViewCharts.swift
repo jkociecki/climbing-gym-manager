@@ -19,17 +19,25 @@ struct DifficultyData {
 class ChartsViewModel: ObservableObject {
     @Published var lineChartData: [ChartData] = []
     @Published var barChartData: [DifficultyData] = []
-    
     let userID: String
-    
-    init(userID: String) {
+    var show_for_all_gyms: Bool?
+
+    init(userID: String, show_for_all_gyms: Bool? = nil) {
         self.userID = userID
+        self.show_for_all_gyms = show_for_all_gyms
     }
+
     
     func generateChartData() async {
         do {
-            // Pobranie danych jednorazowo
-            let toppedBoulders: [ToppedByForProfile] = try await DatabaseManager.shared.getCurrentGymToppedByForProfile(forUserID: userID)
+            let toppedBoulders: [ToppedByForProfile]
+
+            if show_for_all_gyms == true {
+                toppedBoulders = try await DatabaseManager.shared.getCurrentGymToppedByForProfileForAllGyms(forUserID: userID)
+            } else {
+                toppedBoulders = try await DatabaseManager.shared.getCurrentGymToppedByForProfile(forUserID: userID)
+            }
+
             
             // Przetwarzanie danych dla LineChart
             let currentMonth = DateFormatter.localizedString(from: Date(), dateStyle: .short, timeStyle: .none)

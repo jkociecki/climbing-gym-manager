@@ -29,15 +29,21 @@ class TopBouldersManager: ObservableObject {
     private let db = DatabaseManager.shared
     private var toppedBoulders: [ToppedByForProfile] = []
     private var isDataLoaded = false
-    var userID: String
-    
-    init(userID: String) {
+    let userID: String
+    var show_for_all_gyms: Bool?
+
+    init(userID: String, show_for_all_gyms: Bool? = nil) {
         self.userID = userID
+        self.show_for_all_gyms = show_for_all_gyms
     }
     
     func loadData() async throws {
         guard !isDataLoaded else { return }
-        toppedBoulders = try await db.getCurrentGymToppedByForProfile(forUserID: userID)
+        if show_for_all_gyms == true {
+            toppedBoulders = try await DatabaseManager.shared.getCurrentGymToppedByForProfileForAllGyms(forUserID: userID)
+        } else {
+            toppedBoulders = try await DatabaseManager.shared.getCurrentGymToppedByForProfile(forUserID: userID)
+        }
         isDataLoaded = true
     }
     

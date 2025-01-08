@@ -548,6 +548,18 @@ class DatabaseManager {
 
         return response
     }
+    
+    func getCurrentGymToppedByForProfileForAllGyms(forUserID userID: String) async throws -> [ToppedByForProfile] {
+
+        let response: [ToppedByForProfile] = try await client
+            .rpc("get_topped_by_for_profile_for_all_gyms", params: [
+                "user_id_param": userID
+            ])
+            .execute()
+            .value
+
+        return response
+    }
 
 
 }

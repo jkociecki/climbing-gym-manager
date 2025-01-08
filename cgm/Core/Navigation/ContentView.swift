@@ -7,6 +7,7 @@ struct MainView: View {
     @State private var selectedView:        String = "Home"
     @State private var showFilterPanel:     Bool = false
     @State private var showAddNewPost:      Bool = false
+    @State private var show_data_all_gyms:  Bool = false
     @State private var isAuthenticated:     Bool = true
     @State private var isWhileZooming:      Bool = false
     @State private var isLoading:           Bool = false
@@ -106,7 +107,9 @@ struct MainView: View {
             return TopBarConfig(
                 title: "Profile",
                 leftButton: .menuButton(showSideMenu: $showSideMenu),
-                rightButton: .none,
+                rightButton: .custom(icon: "arrow.left.arrow.right", action: {
+                    show_data_all_gyms.toggle()
+                }),
                 isLoading: $isLoading
             )
             

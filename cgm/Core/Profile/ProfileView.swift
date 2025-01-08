@@ -22,9 +22,9 @@ struct ProfileView: View {
     @State private var topBoulders: [TopTenBoulder] = []
     @Binding var isLoading: Bool
 
-    init(userID: String, isLoading: Binding<Bool>) {
-        _chartsViewModel = StateObject(wrappedValue: ChartsViewModel(userID: userID))
-        _topBouldersViewModel = StateObject(wrappedValue: TopBouldersManager(userID: userID))
+    init(userID: String, isLoading: Binding<Bool>, show_for_all_gyms: Bool? = nil) {
+        _chartsViewModel = StateObject(wrappedValue: ChartsViewModel(userID: userID, show_for_all_gyms: show_for_all_gyms))
+        _topBouldersViewModel = StateObject(wrappedValue: TopBouldersManager(userID: userID, show_for_all_gyms: show_for_all_gyms))
         _isLoading = isLoading
     }
 
