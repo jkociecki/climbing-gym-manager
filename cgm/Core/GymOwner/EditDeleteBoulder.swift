@@ -4,41 +4,44 @@ import SwiftUI
 struct selectBoulder: View {
     @State var tappos: CGPoint = CGPoint()
     @Binding var isPresented: Bool
-    @State var isLoading = false
-
+    @Binding var isLoading: Bool
+    @State var mapViewModel: MapViewModel = MapViewModel(isCurrentGym: false)
+    
     
     var body: some View {
-        VStack {
-            Button("Back") {
-                print("tapped")
-                isPresented = false
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal)
-            .zIndex(200)
+        ZStack {
+            MapView(
+                mapViewModel: mapViewModel,
+                isTapInteractive: false,
+                tapPosistion: $tappos,
+                isEdit: true,
+                isLoading: $isLoading
+            )
+            .edgesIgnoringSafeArea(.all)
             
-            ZStack {
-                MapView(
-                    mapViewModel: MapViewModel(isCurrentGym: false),
-                    isTapInteractive: false,
-                    tapPosistion: $tappos,
-                    isEdit: true,
-                    isLoading: $isLoading
-                )
-                .frame(width: UIScreen.main.bounds.width - 100, height: UIScreen.main.bounds.height - 200)
-                .clipShape(RoundedRectangle(cornerRadius: 15))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 15)
-                        .stroke(Color.gray, lineWidth: 2)
-                )
+            VStack {
+                HStack {
+                    Button(action: {
+                        print("tapped")
+                        isPresented = false
+                    }) {
+                        HStack {
+                            Text("Back")
+                        }
+                        .padding()
+                        .background(Color.black.opacity(0.7))
+                        .foregroundColor(.blue)
+                        .cornerRadius(10)
+                    }
+                    .padding(.leading, 16)
+                    .padding(.top, 16)
+                    
+                    Spacer()
+                }
+                Spacer()
             }
-            .padding(.horizontal)
         }
-        .padding(.top, 100)
-        .ignoresSafeArea(edges: .bottom) 
     }
-
-
 }
 
 struct EditDeleteBoulder: View {
@@ -53,7 +56,10 @@ struct EditDeleteBoulder: View {
     @State private var sector: String = ""
     @State private var isShowingMap = false
     @State private var tapPosition: CGPoint = CGPoint(x: 0, y: 0)
-
+    @State private var showAlert: Bool = false
+    @State private var alertMessage: String = ""
+    @Binding var boulders: [Boulder]
+    
     var body: some View {
         VStack {
             if isLoading {
@@ -93,26 +99,49 @@ struct EditDeleteBoulder: View {
                         Button("Edit Boulder") {
                             Task {
                                 do {
-                                    print(difficulty, selectedColor, selectedSectorID, tapPosition)
                                     var updatedBoulder = boulder
+                                    let boulderIndex = boulders.firstIndex(where: { $0.id == boulder.id })
+                                    
                                     if let newColor = selectedColor, !newColor.isEmpty, newColor != boulder.color {
                                         updatedBoulder.color = newColor
-                                    }
+                                        if let boulderIndex = boulderIndex {
+                                            boulders[boulderIndex].color = Color(hex: newColor)
+                                        }                                   }
                                     if !difficulty.isEmpty, difficulty != boulder.diff {
                                         updatedBoulder.diff = difficulty
+                                        if let boulderIndex = boulderIndex {
+                                            boulders[boulderIndex].difficulty = difficulty
+                                        }
                                     }
                                     if let newSectorID = selectedSectorID, newSectorID != boulder.sector_id {
                                         updatedBoulder.sector_id = newSectorID
+                                        if let sector = sectors.first(where: { $0.id == selectedSectorID } )
+                                        {
+                                            if let boulderIndex = boulderIndex {
+                                                boulders[boulderIndex].sector = sector.sector_name
+                                            }
+                                        }
+
                                     }
                                     if tapPosition != CGPoint(x: 0, y: 0) {
                                         updatedBoulder.x = Float(tapPosition.x)
                                         updatedBoulder.y = Float(tapPosition.y)
+                                        if let boulderIndex = boulderIndex {
+                                            boulders[boulderIndex].x = CGFloat(tapPosition.x)
+                                            boulders[boulderIndex].y = CGFloat(tapPosition.y)
+                                        }
                                     }
-
+                                    
                                     try await DatabaseManager.shared.updateBoulder(boulder: updatedBoulder)
-                                    print("Boulder successfully updated.")
+                                    DispatchQueue.main.async {
+                                        alertMessage = "Boulder successfully updated."
+                                        showAlert = true
+                                    }
                                 } catch {
-                                    print("Error updating boulder: \(error.localizedDescription)")
+                                    DispatchQueue.main.async {
+                                        alertMessage = "Error updating boulder: \(error.localizedDescription)"
+                                        showAlert = true
+                                    }
                                 }
                             }
                         }
@@ -121,13 +150,19 @@ struct EditDeleteBoulder: View {
                             Task {
                                 do {
                                     try await DatabaseManager.shared.deleteBoulderWithIsActive(boulderID: boulderID)
-                                    print("Boulder successfully deleted.")
+                                    DispatchQueue.main.async {
+                                        alertMessage = "Boulder successfully deleted."
+                                        showAlert = true
+                                    }
+                                    boulders.removeAll(where: { $0.id == boulderID })
                                 } catch {
-                                    print("Error deleting boulder: \(error.localizedDescription)")
+                                    DispatchQueue.main.async {
+                                        alertMessage = "Error deleting boulder: \(error.localizedDescription)"
+                                        showAlert = true
+                                    }
                                 }
                             }
                         }
-
                     }
                 }
                 .zIndex(10)
@@ -148,8 +183,12 @@ struct EditDeleteBoulder: View {
                 tapPosistion: $tapPosition,
                 selectedColor: $selectedColor,
                 sector: $sector,
-                difficulty: $difficulty
+                difficulty: $difficulty,
+                isloading: $isLoading
             )
+        }
+        .alert(isPresented: $showAlert) {
+            Alert(title: Text("Add Boulder"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
         }
     }
 
@@ -178,4 +217,8 @@ struct EditDeleteBoulder: View {
         }
         isLoading = false
     }
+}
+
+#Preview{
+    MainView()
 }

@@ -8,8 +8,10 @@ struct AddBouldersView: View {
     @State private var isShowingMap = false
     @State private var tapPosition: CGPoint = CGPoint(x: 0, y: 0)
     @State private var sectors: [SectorD] = []
-    
+    @State private var showAlert: Bool = false
+    @State private var alertMessage: String = ""
     @Binding var isPresented: Bool
+    @Binding var isLoading: Bool
 
 
     func fetchSectors() {
@@ -39,9 +41,16 @@ struct AddBouldersView: View {
                     )
                 ).execute()
                 print(res)
-                print("Boulder added successfully.")
+                DispatchQueue.main.async {
+                    alertMessage = "Boulder added successfully!"
+                    showAlert = true
+                }
             } catch {
                 print("Error adding boulder: \(error)")
+                DispatchQueue.main.async {
+                    alertMessage = "Failed to add boulder. Please try again."
+                    showAlert = true
+                }
             }
         }
     }
@@ -74,9 +83,14 @@ struct AddBouldersView: View {
                 tapPosistion: $tapPosition,
                 selectedColor: $selectedColor,
                 sector: $sector,
-                difficulty: $difficulty
+                difficulty: $difficulty,
+                isloading: $isLoading
             )
         }
+        .alert(isPresented: $showAlert) {
+            Alert(title: Text("Add Boulder"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+        }
+
     }
 }
 
@@ -256,7 +270,7 @@ struct FullScreenMapView: View {
     @Binding var selectedColor: String?
     @Binding var sector: String
     @Binding var difficulty: String
-    @State private var isloading: Bool = false
+    @Binding var isloading: Bool
 
     var body: some View {
         NavigationView {

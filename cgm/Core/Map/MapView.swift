@@ -83,7 +83,7 @@ struct MapView: View {
         }
         .sheet(item: $selectedBoulder) { boulderId in
             if isEdit{
-                EditDeleteBoulder(boulderID: boulderId)
+                EditDeleteBoulder(boulderID: boulderId, boulders: $mapViewModel.boulders)
             }else{
                 BoulderInfoView(viewModel: BoulderInfoModel(boulderID: boulderId, userID: AuthManager.shared.userUID ?? ""),
                                 boulders: $mapViewModel.boulders)

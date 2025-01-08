@@ -79,9 +79,9 @@ struct MainView: View {
              await authManager.checkAuth()
              isAuthenhicating = false
          }
-         .onTapGesture {
-             hideKeyboard()
-         }
+//         .onTapGesture {
+//             hideKeyboard()
+//         }
      }
     
     private func getTopBarConfig() -> TopBarConfig {
@@ -234,7 +234,7 @@ struct TabView: View {
                 case "Logout":
                     LogoutHandlerView()
                 case "Gym Owner Panel":
-                    GymOwnerView()
+                    GymOwnerView(isLoading: $isLoading)
                 default:
                     HomeView()
                 }
