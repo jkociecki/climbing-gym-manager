@@ -367,3 +367,6 @@ struct AvgPointsBox: View
 //    }
 //}
 
+#Preview {
+    MainView()
+}

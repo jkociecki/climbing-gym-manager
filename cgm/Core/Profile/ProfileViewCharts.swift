@@ -215,7 +215,6 @@ struct BarChartView: View {
             
             VStack {
                 if viewModel.barChartData.isEmpty {
-                    // Show "No Data Available" message when no bar data
                     Text("No Data Available")
                         .foregroundColor(.gray)
                         .font(.title3)
@@ -223,7 +222,6 @@ struct BarChartView: View {
                         .opacity(0.6)
                         .padding()
                 } else {
-                    // Chart with data
                     Chart(viewModel.barChartData.map { $0.difficulty }, id: \.self) { key in
                         BarMark(
                             x: .value("Grade", key),

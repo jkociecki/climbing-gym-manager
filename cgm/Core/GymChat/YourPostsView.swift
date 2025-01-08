@@ -3,7 +3,6 @@
 //
 //  Created by Mikołaj Olesiński on 05/01/2025.
 //
-
 import SwiftUI
 
 struct YourPostsView: View {
@@ -16,44 +15,38 @@ struct YourPostsView: View {
     init() {
         _gymChatModel = StateObject(wrappedValue: GymChatModel(isLoading: .constant(false)))
     }
-    
+
     var body: some View {
-        NavigationView {
-            VStack {
-                if isLoading {
-                    loadingIndicator
+        VStack {
+            if isLoading {
+                loadingIndicator
+            } else {
+                if gymChatModel.posts.isEmpty {
+                    noPostsIndicator
                 } else {
-                    if gymChatModel.posts.isEmpty {
-                        noPostsIndicator
-                    } else {
-                        ScrollView {
-                            LazyVStack(spacing: 16) {
-                                ForEach(gymChatModel.posts) { post in
-                                    PostView(post: post)
-                                        .onLongPressGesture {
-                                            showActionMenu(for: post)
-                                        }
-                                        .onTapGesture {
-                                            selectedPost = post
-                                        }
-                                }
-
-                                if gymChatModel.isLoading {
-                                    loadingIndicator
-                                }
-
-                                if !gymChatModel.hasMorePosts && !gymChatModel.posts.isEmpty {
-                                    endOfContentIndicator
-                                }
+                    ScrollView {
+                        LazyVStack(spacing: 16) {
+                            ForEach(gymChatModel.posts) { post in
+                                PostView(post: post)
+                                    .onLongPressGesture {
+                                        showActionMenu(for: post)
+                                    }
+                                    .onTapGesture {
+                                        selectedPost = post
+                                    }
                             }
-                            .padding()
+
+                            if gymChatModel.isLoading {
+                                loadingIndicator
+                            }
+
+                            if !gymChatModel.hasMorePosts && !gymChatModel.posts.isEmpty {
+                                endOfContentIndicator
+                            }
                         }
+                        .padding()
                     }
                 }
-            }
-            .navigationTitle("Your Posts")
-            .sheet(item: $selectedPost) { selectedPost in
-                PostCommentsView(post: selectedPost)
             }
         }
         .onAppear {
@@ -127,3 +120,4 @@ struct YourPostsView: View {
             .transition(.opacity)
     }
 }
+
