@@ -46,10 +46,6 @@ class SetUpAccountModel: ObservableObject {
             throw NSError(domain: "UserDataError", code: 1, userInfo: [NSLocalizedDescriptionKey: "User data is missing."])
         }
 
-        print(userData.name)
-        print(userData.surname)
-        print(userData.gender)
-
         // Konwersja Gender? na Bool?
         let genderBool: Bool? = {
             switch gender {
@@ -59,12 +55,8 @@ class SetUpAccountModel: ObservableObject {
             }
         }()
 
-        // Przygotowanie danych do aktualizacji
         var updateData = userUpload(name: name, surname: surname, gender: genderBool)
 
-        print(userData.uid)
-
-        // Wykonanie zapytania
         try await DatabaseManager.shared.client
             .from("Users")
             .update(updateData)
@@ -81,7 +73,6 @@ class SetUpAccountModel: ObservableObject {
         }
 
         do {
-            // Asynchroniczne pobranie zdjęcia
             if let data = try await StorageManager.shared.fetchUserProfilePicture(user_uid: userData.uid.uuidString) {
                     self.imageData = data
             } else {

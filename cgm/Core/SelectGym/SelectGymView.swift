@@ -98,26 +98,22 @@ struct SVGView: UIViewRepresentable {
     func makeUIView(context: Context) -> MacawView {
         let svgView: MacawView
         do {
-            let node = try SVGParser.parse(text: svgString) // Parsowanie SVG
+            let node = try SVGParser.parse(text: svgString)
             
-            // Obliczanie skali
             let scaleX = 40 / node.bounds!.x
             let scaleY = 40 / node.bounds!.y
-            let scale = min(scaleX, scaleY) // Zachowaj proporcje
                        
             node.place =  .scale(scaleX, scaleY)
             
-            // Tworzenie widoku Macaw
             svgView = MacawView(node: node, frame: CGRect(x: 0, y: 0, width: 40, height: 40))
             
         } catch {
             print("Error parsing SVG: \(error)")
-            svgView = MacawView(frame: CGRect(x: 0, y: 0, width: 40, height: 40)) // Pusty widok w przypadku błędu
+            svgView = MacawView(frame: CGRect(x: 0, y: 0, width: 40, height: 40))
         }
         return svgView
     }
     
     func updateUIView(_ uiView: MacawView, context: Context) {
-        // Można dodać kod do odświeżenia widoku SVG, jeśli dane się zmieniają
     }
 }

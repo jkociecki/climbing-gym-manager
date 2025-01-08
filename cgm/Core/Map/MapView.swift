@@ -61,24 +61,26 @@ struct MapView: View {
             
             
             ForEach(Array(mapViewModel.gymSectors.enumerated()), id: \.offset) { sectorIndex, sector in
-                let center = sector.paths[0].path.boundingRect
                 
-                Text(sector.id)
-                    .font(.custom("Righteous-Regular", size: 12))
-                    .foregroundStyle(.white)
-                    .position(x: center.midX, y: center.midY)
-                    .background(
-                        RoundedRectangle(cornerRadius: 30)
-                            .stroke(.white, lineWidth: 3)
-                            .fill(.purple)
-                            .frame(width: 73, height: 26)
-                            .position(x: center.midX, y: center.midY)
-                    )
-                    .transformEffect(transform)
-                    .ignoresSafeArea()
-                    .drawingGroup()
-                
-                
+                if sector.id != "nclick" {
+                    
+                    let center = sector.paths[0].path.boundingRect
+                    
+                    Text(sector.id)
+                        .font(.custom("Righteous-Regular", size: 10))
+                        .foregroundStyle(.white)
+                        .position(x: center.midX, y: center.midY)
+                        .background(
+                            RoundedRectangle(cornerRadius: 30)
+                                .stroke(.white, lineWidth: 3)
+                                .fill(.purple)
+                                .frame(width: 73, height: 26)
+                                .position(x: center.midX, y: center.midY)
+                        )
+                        .transformEffect(transform)
+                        .ignoresSafeArea()
+                        .drawingGroup()
+                }
             }
         }
         .sheet(item: $selectedBoulder) { boulderId in

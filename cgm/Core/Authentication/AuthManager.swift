@@ -39,7 +39,6 @@ class AuthManager: ObservableObject {
     let client = SupabaseClient(supabaseURL: URL(string: "https://hawfslcnxjerfllpbriq.supabase.co")!, supabaseKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhhd2ZzbGNueGplcmZsbHBicmlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQyMTAzNjcsImV4cCI6MjA0OTc4NjM2N30.hAAMQQ9YeNCwopa3UzUCaJ8NlHrxNfS2zJTnrljIp3k")
     
     private init() {
-        // Wczytaj zapisane dane przy inicjalizacji
         loadStoredUserData()
     }
     
@@ -49,7 +48,6 @@ class AuthManager: ObservableObject {
             self.isAdmin = UserDefaults.standard.bool(forKey: "isAdmin")
             self.adminOf = UserDefaults.standard.integer(forKey: "adminOf")
             
-            // Odśwież dane z serwera
             Task {
                 await refreshUserData()
             }
@@ -131,7 +129,6 @@ class AuthManager: ObservableObject {
                 adminOf = -1
             }
         } catch {
-            print("Error checking auth status: \(error)")
             isAuthenticated = false
         }
     }

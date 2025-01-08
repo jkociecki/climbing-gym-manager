@@ -19,146 +19,217 @@ struct SetUpAccountView: View {
     @State var password: String = ""
     @State var selectedGender: Gender? = nil
     @State private var showConfirmationAlert: Bool = false
+    @State private var showToast: Bool = false
+    @State private var toastMessage: String = ""
     @Binding var isLoading: Bool
-        
+    
     var body: some View {
         ScrollView{
-                ZStack{
-
-                    ScrollView{
+            ZStack{
+                
+                ScrollView{
+                    VStack{
+                        // PHOTO AND PLUS ICON
                         VStack{
-                            // PHOTO AND PLUS ICON
-                            VStack{
-                                if setUpAccountModel.imageData == nil {
-                                    Image(systemName: "person.circle.fill")
-                                        .resizable()
-                                        .frame(width: 150, height: 150)
-                                        .foregroundColor(Color(.systemGray))
-                                        .background(Circle().foregroundColor(.white).frame(width: 160, height: 160))
-                                } else {
-                                    Image(uiImage: UIImage(data: setUpAccountModel.imageData!)!)
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(width: 150, height: 150)
-                                        .clipShape(Circle())
-                                        .background(Circle().foregroundColor(.white).frame(width: 160, height: 160))
-                                }
-                                Button(action:
-                                        {
-                                    
-                                    setUpAccountModel.showImagePicker = true
-                                    
-                                } ){
-                                    Image(systemName: "plus.circle")
-                                        .resizable()
-                                        .foregroundColor(Color(.white))
-                                        .background(Circle().fill(Color("Fioletowy")))
-                                        .frame(width: 50, height: 50)
-                                }
-                                .offset(x: 40, y: -40)
-                                .sheet(isPresented: $setUpAccountModel.showImagePicker) {
-                                    PhotoPicker(imageData: $setUpAccountModel.imageData)
-                                }
-                                .padding(.bottom, -10)
-                                .padding(.top)
+                            if setUpAccountModel.imageData == nil {
+                                Image(systemName: "person.circle.fill")
+                                    .resizable()
+                                    .frame(width: 150, height: 150)
+                                    .foregroundColor(Color(.systemGray))
+                                    .background(
+                                        Circle()
+                                            .stroke(
+                                                LinearGradient(colors: [Color.fioletowy, Color.czerwony],
+                                                               startPoint: .bottomTrailing,
+                                                               endPoint: .topLeading),
+                                                lineWidth: 5
+                                            )
+                                            .frame(width: 160, height: 160)
+                                    )
+                            } else {
+                                Image(uiImage: UIImage(data: setUpAccountModel.imageData!)!)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 150, height: 160)
+                                    .clipShape(Circle())
+                                    .overlay(
+                                        Circle()
+                                            .stroke(
+                                                LinearGradient(colors: [Color.fioletowy, Color.czerwony],
+                                                               startPoint: .bottomTrailing,
+                                                               endPoint: .topLeading),
+                                                lineWidth: 5
+                                            )
+                                    )
+                            }
+                            
+                            Button(action:
+                                    {
                                 
-                                // Personal Information
-                                VStack(alignment: .leading) {
-                                    Text("Personal information")
-                                        .font(.headline)
-                                        .padding(.horizontal)
-                                        .foregroundColor(.black)
-                                    
-                                    
-                                    InfoRow(icon: "person",
-                                            title: "Full name",
-                                            text: $name,
-                                            placeholder: setUpAccountModel.userData?.name ?? "Enter your full name")
-                                    
-                                    InfoRow(icon: "person.crop.square",
-                                            title: "Nickname",
-                                            text: $surname,
-                                            placeholder: setUpAccountModel.userData?.surname ?? "Enter your nickname")
-                                    
-                                    SelectGender(selectedGender: $selectedGender)
-      
-                                    Text("Account")
-                                        .font(.headline)
-                                        .padding(.horizontal)
-                                        .foregroundColor(.black)
-                                        .padding(.top, 20)
-                                    InfoRow(icon: "envelope",
-                                            title: "Email",
-                                            text: $email,
-                                            placeholder: setUpAccountModel.userData?.email ?? "john.doe@gmail.com")
-                                    
-                                    InfoRow(icon: "lock.fill",
-                                            title: "Password",
-                                            text: $password,
-                                            placeholder: "*************",
-                                            isSecure: true)
-                                }
-                                .padding()
+                                setUpAccountModel.showImagePicker = true
                                 
-                                Button {
-                                    Task{
-                                        do{
-                                            try await StorageManager.shared.uploadFileForCurrentUser(photoData: setUpAccountModel.imageData!)
-                                            try await setUpAccountModel.saveUserData(name: name, surname: surname, gender: selectedGender)
-                                            await setUpAccountModel.fetchUserData()
-                                            try await setUpAccountModel.fetchProfilePicture()
-                                            showConfirmationAlert = true
-                                        }catch{
-                                            print(error)
+                            } ){
+                                Image(systemName: "plus.circle")
+                                    .resizable()
+                                    .foregroundStyle(
+                                        LinearGradient(colors: [Color.fioletowy, Color.czerwony],
+                                                       startPoint: .bottomTrailing,
+                                                       endPoint: .topLeading)
+                                    )
+                                    .background(Circle().foregroundStyle(Color(UIColor.systemBackground)))
+                                    .overlay(
+                                        Circle()
+                                            .stroke(
+                                                LinearGradient(colors: [Color.fioletowy, Color.czerwony],
+                                                               startPoint: .bottomTrailing,
+                                                               endPoint: .topLeading),
+                                                lineWidth: 5
+                                            )
+                                    )
+                                    .frame(width: 50, height: 50)
+                            }
+                            .offset(x: 40, y: -50)
+                            .sheet(isPresented: $setUpAccountModel.showImagePicker) {
+                                PhotoPicker(imageData: $setUpAccountModel.imageData)
+                            }
+                            .padding(.bottom, -10)
+                            .padding(.top)
+                            
+                            
+                            // Personal Information
+                            VStack(alignment: .leading) {
+                                Text("Personal information")
+                                    .font(.headline)
+                                    .padding(.horizontal)
+                                    .foregroundColor(.black)
+                                
+                                
+                                InfoRow(icon: "person",
+                                        title: "Full name",
+                                        text: $name,
+                                        placeholder: setUpAccountModel.userData?.name ?? "Enter your full name")
+                                
+                                InfoRow(icon: "person.crop.square",
+                                        title: "Nickname",
+                                        text: $surname,
+                                        placeholder: setUpAccountModel.userData?.surname ?? "Enter your nickname")
+                                
+                                SelectGender(selectedGender: $selectedGender)
+                                
+                                Text("Account")
+                                    .font(.headline)
+                                    .padding(.horizontal)
+                                    .foregroundColor(.black)
+                                    .padding(.top, 20)
+                                InfoRow(icon: "envelope",
+                                        title: "Email",
+                                        text: $email,
+                                        placeholder: setUpAccountModel.userData?.email ?? "john.doe@gmail.com")
+                                
+                                InfoRow(icon: "lock.fill",
+                                        title: "Password",
+                                        text: $password,
+                                        placeholder: "*************",
+                                        isSecure: true)
+                            }
+                            .padding()
+                            
+                            Button {
+                                Task {
+                                    do {
+                                        try await StorageManager.shared.uploadFileForCurrentUser(photoData: setUpAccountModel.imageData!)
+                                        try await setUpAccountModel.saveUserData(name: name, surname: surname, gender: selectedGender)
+                                        await setUpAccountModel.fetchUserData()
+                                        try await setUpAccountModel.fetchProfilePicture()
+                                        showConfirmationAlert = true
+                                        
+                                        // Wyświetlenie Toast
+                                        toastMessage = "Data successfully saved!"
+                                        withAnimation {
+                                            showToast = true
                                         }
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                            withAnimation {
+                                                showToast = false
+                                            }
+                                        }
+                                    } catch {
+                                        print(error)
                                     }
-                                } label: {
-                                    Text("Save Changes")
-                                        .bold()
-                                        .font(.system(size: 20))
-                                        .frame(width: 360, height: 60)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 15, style: .continuous)
-                                                .fill(Color("Fioletowy"))
-                                        )
-                                        .foregroundColor(.white)
-                                }.padding()
-                                
+                                }
+                            } label: {
+                                Text("Save Changes")
+                                    .bold()
+                                    .font(.system(size: 20))
+                                    .frame(width: 360, height: 60)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 15, style: .continuous)
+                                            .fill(Color("Fioletowy"))
+                                    )
+                                    .foregroundColor(.white)
+                            }.padding()
+                        }
+                        .padding(.vertical, 140)
+                        
+                        // Toast View
+                        if showToast {
+                            ToastView(message: toastMessage)
+                                .transition(.move(edge: .top).combined(with: .opacity))
+                                .zIndex(100)
+                        }
+                    }
+                }
+                .frame(maxHeight: .infinity)
+                .onAppear {
+                    Task {
+                        isLoading = true
+                        await setUpAccountModel.fetchUserData()
+                        if let userData = setUpAccountModel.userData {
+                            await MainActor.run {
+                                name = userData.name ?? ""
+                                surname = userData.surname ?? ""
+                                email = userData.email
+                                if let isFemale = userData.gender {
+                                    selectedGender = isFemale ? .female : .male
+                                } else {
+                                    selectedGender = nil
+                                }
                             }
                         }
+                        isLoading = false
                     }
                 }
-                .padding(.vertical, 140)
-        }
-        .frame(maxHeight: .infinity)
-        .onAppear {
-            Task {
-                isLoading = true
-                await setUpAccountModel.fetchUserData()
-                // Przenieś przypisanie wartości tutaj, po pobraniu danych
-                if let userData = setUpAccountModel.userData {
-                    await MainActor.run {
-                        name = userData.name ?? ""
-                        surname = userData.surname ?? ""
-                        email = userData.email
-                        if let isFemale = userData.gender {
-                            selectedGender = isFemale ? .female : .male
-                        } else {
-                            selectedGender = nil
-                        }
-                    }
+                .alert(isPresented: $showConfirmationAlert) {
+                    Alert(
+                        title: Text("Changes Saved"),
+                        message: Text("Your account information has been successfully updated."),
+                        dismissButton: .default(Text("OK"))
+                    )
                 }
-                isLoading = false
             }
         }
-        .alert(isPresented: $showConfirmationAlert) {
-            Alert(
-                title: Text("Changes Saved"),
-                message: Text("Your account information has been successfully updated."),
-                dismissButton: .default(Text("OK"))
-            )
+}
+    
+struct ToastView: View {
+        let message: String
+        
+        var body: some View {
+            Text(message)
+                .bold()
+                .padding()
+                .foregroundColor(.white)
+                .background(
+                    RoundedRectangle(cornerRadius: 15)
+                        .fill(LinearGradient(colors: [Color.fioletowy, Color.czerwony],
+                                             startPoint: .topLeading,
+                                             endPoint: .bottomTrailing))
+                )
+                .shadow(radius: 10)
+                .padding(.top, 50)
         }
     }
+}
+
     
     
     struct InfoRow: View {
@@ -209,7 +280,7 @@ struct SetUpAccountView: View {
             .padding(.vertical, -1)
         }
     }
-}
+
 
 
 
@@ -332,4 +403,9 @@ struct GenderButton: View {
             }
             .animation(.spring(duration: 0.8), value: isSelected)
     }
+}
+
+
+#Preview{
+    MainView()
 }

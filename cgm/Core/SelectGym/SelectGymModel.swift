@@ -23,13 +23,12 @@ class SelectGymModel: ObservableObject {
     func fetchClimbingGymsData() async {
         do {
             isLoading = true
-            let session = try await AuthManager.shared.client.auth.session
             let data = try await DatabaseManager.shared.getGyms()
             self.climbingGyms = data
             isLoading = false
         } catch {
             isLoading = false
-            self.error = error // Informacja o błędzie
+            self.error = error
             print("Error fetching gyms: \(error)")
         }
     }

@@ -2,7 +2,7 @@ import SwiftUI
 
 
 struct MainView: View {
-    @State private var selectedTab:         String = "housee"
+    @State private var selectedTab:         String = "house"
     @State private var showSideMenu:        Bool = false
     @State private var selectedView:        String = "Home"
     @State private var showFilterPanel:     Bool = false
