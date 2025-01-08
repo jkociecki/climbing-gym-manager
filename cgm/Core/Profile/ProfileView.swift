@@ -47,7 +47,7 @@ struct ProfileView: View {
                     
                     SwitchableViewProfile(viewModel: chartsViewModel)
                     
-                    TopTenBoulders(topBoulders: $topBoulders)  // Pass the topBoulders array as binding
+                    TopTenBoulders(topBoulders: $topBoulders)
                 }
             }
             .padding(.vertical, 140)
@@ -56,8 +56,8 @@ struct ProfileView: View {
         .onAppear {
             Task {
                 isLoading = true
+                await loadTopBoulders()
                 await chartsViewModel.generateChartData()
-                await loadTopBoulders()  // Fetch top boulders when the view appears
                 isLoading = false
             }
         }
@@ -145,11 +145,9 @@ struct UserProfileHeader: View {
         .onAppear {
             Task {
                 do {
-                    // Pobieranie danych użytkownika
                     let user = try await DatabaseManager.shared.getUser(userID: userID)
                     userName = makeUserName(from: user)
                     
-                    // Pobieranie zdjęcia profilowego
                     profileImageData = try? await StorageManager.shared.fetchUserProfilePicture(user_uid: userID)
                 } catch {
                     print("Failed to load user data or profile picture: \(error)")

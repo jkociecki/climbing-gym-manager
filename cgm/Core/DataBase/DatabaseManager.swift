@@ -506,6 +506,49 @@ class DatabaseManager {
         return response
         print("response \(response)")
     }
+    
+    
+    func getCurrentGymToppedBy(forUserID userID: String) async throws -> [ToppedBy] {
+        guard let currentGymId = UserDefaults.standard.string(forKey: "selectedGym") else {
+            throw NSError(domain: "GymError", code: 1, userInfo: [NSLocalizedDescriptionKey: "No gym selected"])
+        }
+
+        guard let gymId = Int(currentGymId) else {
+            throw NSError(domain: "GymError", code: 2, userInfo: [NSLocalizedDescriptionKey: "Invalid gym ID"])
+        }
+
+        let response: [ToppedBy] = try await client
+            .rpc("get_topped_by_for_gym", params: [
+                "gym_id_param": String(gymId),
+                "user_id_param": userID
+            ])
+            .execute()
+            .value
+
+        print("response prosze3 \(response)")
+        return response
+    }
+    
+    func getCurrentGymToppedByForProfile(forUserID userID: String) async throws -> [ToppedByForProfile] {
+        guard let currentGymId = UserDefaults.standard.string(forKey: "selectedGym") else {
+            throw NSError(domain: "GymError", code: 1, userInfo: [NSLocalizedDescriptionKey: "No gym selected"])
+        }
+
+        guard let gymId = Int(currentGymId) else {
+            throw NSError(domain: "GymError", code: 2, userInfo: [NSLocalizedDescriptionKey: "Invalid gym ID"])
+        }
+
+        let response: [ToppedByForProfile] = try await client
+            .rpc("get_topped_by_for_profile", params: [
+                "gym_id_param": String(gymId),
+                "user_id_param": userID
+            ])
+            .execute()
+            .value
+
+        return response
+    }
+
 
 }
 

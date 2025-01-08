@@ -26,24 +26,23 @@ class ChartsViewModel: ObservableObject {
         self.userID = userID
     }
     
-    // Generate data for both charts
     func generateChartData() async {
         do {
-            // For LineChart data
-            let toppedBoulders: [ToppedBy] = try await DatabaseManager.shared.getToppedBoulders(forUserID: userID)
+            // Pobranie danych jednorazowo
+            let toppedBoulders: [ToppedByForProfile] = try await DatabaseManager.shared.getCurrentGymToppedByForProfile(forUserID: userID)
+            
+            // Przetwarzanie danych dla LineChart
             let currentMonth = DateFormatter.localizedString(from: Date(), dateStyle: .short, timeStyle: .none)
             let months = getPreviousMonths(from: currentMonth)
             
             var monthlyPoints: [String: Int] = [:]
             
             for toppedBoulder in toppedBoulders {
-                if let boulder = try await DatabaseManager.shared.getBoulderByID(boulderID: toppedBoulder.boulder_id) {
-                    let difficulty = boulder.diff
-                    
-                    if let month = extractMonth(from: toppedBoulder.created_at), months.contains(month) {
-                        let points = calculatePointsForBoulder(difficulty: difficulty, isFlashed: toppedBoulder.is_flashed)
-                        monthlyPoints[month, default: 0] += points
-                    }
+                if let createdAt = toppedBoulder.created_at,
+                   let month = extractMonth(from: createdAt),
+                   months.contains(month) {
+                    let points = calculatePointsForBoulder(difficulty: toppedBoulder.difficulty, isFlashed: toppedBoulder.is_flashed)
+                    monthlyPoints[month, default: 0] += points
                 }
             }
             
@@ -53,18 +52,10 @@ class ChartsViewModel: ObservableObject {
                 lineChartData.append(ChartData(month: month, difficulty: Double(points)))
             }
             
-            // For BarChart data
-            let allBoulders: [BoulderD] = try await DatabaseManager.shared.getCurrentGymBoulders()
-            var boulderDifficultyMap: [Int: String] = [:]
-            for boulder in allBoulders {
-                boulderDifficultyMap[boulder.id] = boulder.diff
-            }
-            
+            // Przetwarzanie danych dla BarChart
             var difficultyCount: [String: Int] = [:]
             for toppedBoulder in toppedBoulders {
-                if let difficulty = boulderDifficultyMap[toppedBoulder.boulder_id] {
-                    difficultyCount[difficulty, default: 0] += 1
-                }
+                difficultyCount[toppedBoulder.difficulty, default: 0] += 1
             }
             
             let completedDifficulties = difficultyCount.keys.sorted { difficultyIndex($0) < difficultyIndex($1) }
@@ -81,6 +72,7 @@ class ChartsViewModel: ObservableObject {
                 }
             }
             
+            // Aktualizacja danych na głównym wątku
             DispatchQueue.main.async {
                 self.lineChartData = lineChartData
                 self.barChartData = barChartData.reversed()
