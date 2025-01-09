@@ -5,7 +5,6 @@
 //
 import SwiftUI
 
-
 struct YourPostsView: View {
     @State private var selectedPost: Post? = nil
     @State private var isLoading: Bool = false
@@ -19,8 +18,7 @@ struct YourPostsView: View {
 
     var body: some View {
         VStack {
-            Spacer(minLength: 135)
-
+            Spacer(minLength: 130)
             if isLoading {
                 loadingIndicator
             } else {
@@ -32,7 +30,13 @@ struct YourPostsView: View {
                             ForEach(gymChatModel.posts) { post in
                                 PostView(post: post)
                                     .onAppear {
-                                        loadMorePostsIfNeeded(post: post)
+                                        // Dodajemy sprawdzenie czy należy załadować więcej postów
+                                        if post.id == gymChatModel.posts.last?.id,
+                                           let userID = userID {
+                                            Task {
+                                                await gymChatModel.loadMorePostsForUser(userID: String(userID))
+                                            }
+                                        }
                                     }
                                     .onLongPressGesture {
                                         showActionMenu(for: post)
@@ -54,16 +58,14 @@ struct YourPostsView: View {
                     }
                 }
             }
-        }
-        .sheet(item: $selectedPost) { selectedPost in
-            PostCommentsView(post: selectedPost)
+            Spacer()
         }
         .onAppear {
             Task {
                 await loadUserData()
             }
         }
-        .onDisappear {
+        .onDisappear{
             hideKeyboard()
         }
     }
@@ -71,8 +73,10 @@ struct YourPostsView: View {
     private func loadUserData() async {
         isLoading = true
         do {
+            // Wczytanie userID
             userID = try await DatabaseManager.shared.getCurrentUserDataBaseID()
             if let userID = userID {
+                // Wczytanie postów po pobraniu userID
                 await loadPosts(userID: userID)
             }
         } catch {
@@ -82,6 +86,7 @@ struct YourPostsView: View {
 
     private func loadPosts(userID: Int) async {
         do {
+            // Asynchroniczne pobranie postów
             await gymChatModel.loadPostsForUser(userID: String(userID))
         } catch {
             print("Error loading posts: \(error)")
@@ -103,20 +108,14 @@ struct YourPostsView: View {
         }
     }
 
-    private func loadMorePostsIfNeeded(post: Post) {
-        if post.id == gymChatModel.posts.last?.id {
-            Task {
-                await gymChatModel.loadMorePosts()
-            }
-        }
-    }
-
+    // Wskaźnik ładowania
     private var loadingIndicator: some View {
         ProgressView()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .transition(.opacity)
     }
 
+    // Komunikat o braku postów
     private var noPostsIndicator: some View {
         Text("No posts available")
             .foregroundColor(.secondary)
@@ -124,6 +123,7 @@ struct YourPostsView: View {
             .transition(.opacity)
     }
 
+    // Komunikat o końcu dostępnych postów
     private var endOfContentIndicator: some View {
         Text("No more posts to load")
             .foregroundColor(.secondary)
@@ -131,6 +131,7 @@ struct YourPostsView: View {
             .transition(.opacity)
     }
 }
+
 
 #Preview {
     MainView()

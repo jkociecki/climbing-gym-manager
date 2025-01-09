@@ -134,7 +134,15 @@ class GymChatModel: ObservableObject {
         currentPage = 1
         posts = []
         hasMorePosts = true
-        defer { isLoading = false }
+        
+        await loadMorePostsForUser(userID: userID)
+    }
+
+    @MainActor
+    func loadMorePostsForUser(userID: String) async {
+        guard !isLoading, hasMorePosts else { return }
+        
+        isLoading = true
         
         do {
             let newPosts = try await DatabaseManager.shared.getPaginatedPostsForUser(uid: userID, page: currentPage)
@@ -147,7 +155,7 @@ class GymChatModel: ObservableObject {
                 let postIds = newPosts.map { $0.post_id }
                 let commentsCountDict = try await DatabaseManager.shared.getCommentsCountForPosts(postIds: postIds)
                 
-                posts = newPosts.map { post in
+                let mappedPosts = newPosts.map { post in
                     let userImage = userProfilePictureCache[post.user_id] != nil ? "profile_picture_\(post.user_id)" : "default_avatar"
                     let profilePicture = userProfilePictureCache[post.user_id].flatMap { UIImage(data: $0) } ?? UIImage(named: "default_avatar")
                     
@@ -165,14 +173,17 @@ class GymChatModel: ObservableObject {
                         commentsCount: commentsCount
                     )
                 }
+                
+                posts.append(contentsOf: mappedPosts)
                 currentPage += 1
             }
         } catch {
             print("Error loading posts for user \(userID): \(error)")
             hasMorePosts = false
         }
+        
+        isLoading = false
     }
-
 
     private func loadUserNames(for posts: [PostsD]) async {
         for post in posts where userCache[post.user_id] == nil {
