@@ -11,47 +11,96 @@ struct RankingUser: Identifiable {
     var user_id: UUID
 }
 
+// Struktura dla danych z bazy
+struct GymUserData: Decodable {
+    let user_uid: String
+    let user_name: String?
+    let user_surname: String?
+    let user_gender: Bool?
+    let boulder_id: Int
+    let topped_at: String
+    let is_flashed: Bool
+    let boulder_diff: String
+}
 
 class RankingManager {
     let db = DatabaseManager.shared
     
-    func calculatePoints(toppedBoulders: [ToppedBy], boulders: [BoulderD]) -> Int {
+    func generateRanking() async throws -> [RankingUser] {
+        guard let idString = UserDefaults.standard.string(forKey: "selectedGym"),
+              let gymID = Int(idString) else {
+            throw NSError(domain: "InvalidGymID", code: 0, userInfo: [NSLocalizedDescriptionKey: "Gym ID is not set or invalid."])
+        }
+        
+        let gymData = try await db.client.rpc("get_gym_users_data", params: ["gym_id_param": gymID]).execute().value as [GymUserData]
+        
+        let userGroupedData = Dictionary(grouping: gymData) { $0.user_uid }
+        
+        var rankingUsers: [RankingUser] = []
+        
+        for (userUid, userBoulders) in userGroupedData {
+            let userData = userBoulders[0]
+            
+            let points = calculatePoints(userBoulders: userBoulders)
+            let (level, progress) = determineLevel(points: points)
+            
+            let rankingUser = RankingUser(
+                name: (userData.user_name?.isEmpty ?? true) && (userData.user_surname?.isEmpty ?? true)
+                    ? "Anonymous"
+                    : "\(userData.user_name ?? "") \(userData.user_surname ?? "")",
+                points: points,
+                gender: userData.user_gender == nil ? "N/A" : (userData.user_gender == true ? "M" : "K"),
+                level: level,
+                progress: progress,
+                imageData: nil,  // Początkowo bez zdjęcia
+                user_id: UUID(uuidString: userUid) ?? UUID()
+            )
+            
+            rankingUsers.append(rankingUser)
+        }
+        
+        return rankingUsers.sorted(by: { $0.points > $1.points })
+    }
+    
+    func fetchUserImages(for users: [RankingUser]) async -> [RankingUser] {
+        var updatedUsers = users
+        
+        for index in users.indices {
+            do {
+                let imageData = try await StorageManager.shared.fetchUserProfilePicture(user_uid: users[index].user_id.uuidString)
+                updatedUsers[index].imageData = imageData
+            } catch {
+                print("Błąd ładowania zdjęcia dla użytkownika \(users[index].name): \(error)")
+            }
+        }
+        
+        return updatedUsers
+    }
+
+    
+    private func calculatePoints(userBoulders: [GymUserData]) -> Int {
         var points = 0
         
-        let calendar = Calendar.current
-        let dateCutoff = calendar.date(byAdding: .month, value: -2, to: Date()) ?? Date()
-        
-        let recentToppedBoulders = toppedBoulders.filter { topped in
-            guard let createdAtString = topped.created_at,
-                  let createdAt = ISO8601DateFormatter().date(from: createdAtString) else {
-                return false
-            }
-            return createdAt >= dateCutoff
-        }
-
-        let sortedBoulders = recentToppedBoulders.compactMap { topped -> (ToppedBy, BoulderD)? in
-            if let boulder = boulders.first(where: { $0.id == topped.boulder_id }) {
-                return (topped, boulder)
-            }
-            return nil
-        }
-        .sorted { b1, b2 in
-            let points1 = levels.first(where: { $0.0 == b1.1.diff })?.1 ?? 0
-            let points2 = levels.first(where: { $0.0 == b2.1.diff })?.1 ?? 0
+        // Sortuj bouldery po trudności (już mamy tylko z ostatnich 2 miesięcy dzięki SQL)
+        let sortedBoulders = userBoulders.sorted { b1, b2 in
+            let points1 = levels.first(where: { $0.0 == b1.boulder_diff })?.1 ?? 0
+            let points2 = levels.first(where: { $0.0 == b2.boulder_diff })?.1 ?? 0
             return points1 > points2
         }
-
-        // Calculate total points
-        for (topped, boulder) in sortedBoulders.prefix(10) {
-            let pointsToAdd = calculatePointsForBoulder(difficulty: boulder.diff, isFlashed: topped.is_flashed)
-            points += pointsToAdd
+        
+        // Weź 10 najlepszych
+        for boulder in sortedBoulders.prefix(10) {
+            points += calculatePointsForBoulder(difficulty: boulder.boulder_diff, isFlashed: boulder.is_flashed)
         }
         
         return points
     }
-
     
-    // Funkcja do określania poziomu na podstawie zdobytych punktów
+    func calculatePointsForBoulder(difficulty: String, isFlashed: Bool) -> Int {
+        let basePoints = levels.first(where: { $0.0 == difficulty })?.1 ?? 0
+        return isFlashed ? Int(Double(basePoints) * 1.2) : basePoints
+    }
+    
     func determineLevel(points: Int) -> (String, String) {
         var currentLevel = "Beginner"
         var nextLevelPoints: Int? = nil
@@ -63,7 +112,6 @@ class RankingManager {
             }
         }
         
-        // Jeśli istnieje następny poziom, obliczamy postęp
         if let nextLevelPoints = nextLevelPoints {
             let previousLevelPoints = levels.first { $0.0 == currentLevel }!.1
             let progress = Double(points - previousLevelPoints) / Double(nextLevelPoints - previousLevelPoints)
@@ -73,57 +121,4 @@ class RankingManager {
             return (currentLevel, "+0%")
         }
     }
-
-
-    func generateRanking() async throws -> [RankingUser] {
-        guard let idString = UserDefaults.standard.string(forKey: "selectedGym"),
-              let gymID = Int(idString) else {
-            throw NSError(domain: "InvalidGymID", code: 0, userInfo: [NSLocalizedDescriptionKey: "Gym ID is not set or invalid."])
-        }
-        
-        print("1")
-        let users = try await db.client.from("Users").select("*").execute().value as [User]
-        let toppedBoulders = try await db.client.from("ToppedBy").select("*").execute().value as [ToppedBy]
-        let boulders = try await db.client.from("Boulders").select("*").execute().value as [BoulderD]
-
-
-
-        let gymBoulders = boulders.filter { $0.gym_id == gymID }
-
-        let gymToppedBoulders = toppedBoulders.filter { toppedBoulder in
-            return gymBoulders.contains { $0.id == toppedBoulder.boulder_id }
-        }
-
-        let gymUsers = users.filter { user in
-            return gymToppedBoulders.contains { $0.user_id == user.uid.uuidString }
-        }
-
-        var rankingUsers: [RankingUser] = []
-
-        for user in gymUsers {
-            let userBoulders = gymToppedBoulders.filter { $0.user_id == user.uid.uuidString }
-            
-            let points = calculatePoints(toppedBoulders: userBoulders, boulders: gymBoulders)
-            
-            let (level, progress) = determineLevel(points: points)
-
-            let imageData = try? await StorageManager.shared.fetchUserProfilePicture(user_uid: user.uid.uuidString)
-            let rankingUser = RankingUser(
-                name: (user.name?.isEmpty ?? true) && (user.surname?.isEmpty ?? true) ? "Anonymous" : "\(user.name ?? "") \(user.surname ?? "")",
-                points: points,
-                gender: user.gender == nil ? "N/A" : (user.gender == true ? "M" : "K"),
-                level: level,
-                progress: progress,
-                imageData: imageData,
-                user_id: user.uid
-            )
-            
-            rankingUsers.append(rankingUser)
-        }
-
-        // Sort the ranking users by points in descending order
-        return rankingUsers.sorted(by: { $0.points > $1.points })
-    }
-
-
 }

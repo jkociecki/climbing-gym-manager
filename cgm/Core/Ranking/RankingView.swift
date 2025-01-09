@@ -8,13 +8,14 @@
 
 import SwiftUI
 
+
 struct RankingView: View {
     @State private var rankingUsersData: [RankingUser] = []
     @State private var selectedGender = 0  // 0 = BOTH, 1 = MAN, 2 = WOMAN
     @State private var searchText = ""
     @State private var isLoading = true  // Track loading state
     @Binding var loading: Bool
-    
+
     var filteredUsers: [RankingUser] {
         let genderFilteredUsers: [RankingUser]
         
@@ -66,11 +67,13 @@ struct RankingView: View {
                     loading = true
                     isLoading = true
                     
+
                     rankingUsersData = try await RankingManager().generateRanking()
                     
-                    // Hide loading indicator once data is fetched
                     isLoading = false
                     loading = false
+                    
+                    rankingUsersData = await RankingManager().fetchUserImages(for: rankingUsersData)
                 } catch {
                     print("Błąd ładowania rankingu: \(error)")
                     isLoading = false
@@ -156,7 +159,7 @@ struct RankingUsersView: View {
                             .foregroundColor(.gray)
                             .lineLimit(1)
 
-                        Image(uiImage: UIImage(data: user.imageData ?? Data()) ?? UIImage(systemName: "person.crop.circle.fill")!)
+                        Image(uiImage: UIImage(data: user.imageData ?? Data()) ?? UIImage(named: "default_avatar")!)
                             .resizable()
                             .scaledToFill()
                             .frame(width: 30, height: 30)
@@ -181,7 +184,6 @@ struct RankingUsersView: View {
                         VStack(alignment: .trailing) {
                             Text(user.level)
                                 .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(.black)
                                 .lineLimit(1)
                                 .truncationMode(.tail)
 

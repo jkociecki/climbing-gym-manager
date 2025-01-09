@@ -146,7 +146,7 @@ struct UserProfileHeader: View {
     var body: some View {
         HStack(spacing: 0) {
             // Wyświetlanie zdjęcia profilowego
-            Image(uiImage: UIImage(data: profileImageData ?? Data()) ?? UIImage(systemName: "person.crop.circle.fill")!)
+            Image(uiImage: UIImage(data: profileImageData ?? Data()) ?? UIImage(named: "default_avatar")!)
                 .resizable()
                 .scaledToFill()
                 .frame(width: 106, height: 106)
