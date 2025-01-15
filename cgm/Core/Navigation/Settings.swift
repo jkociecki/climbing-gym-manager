@@ -32,6 +32,7 @@ struct SettingsView: View {
     @State private var showingTerms = false
     @State private var showingDeleteConfirmation = false
     @State private var showingNoMailAlert = false
+    @State private var showingVideo = false
 
     
     
@@ -59,17 +60,7 @@ struct SettingsView: View {
                 
                 // MARK: - Notifications Section
                 Section(header: Text("Others")) {
-                    NavigationLink {
-                        NotificationPreferencesView()
-                    } label: {
-                        SettingsRow(
-                            icon: "bell.fill",
-                            iconColor: .fioletowy,
-                            title: "Notification Preferences",
-                            showArrow: false
-                        )
-                    }
-                    
+                                        
                     Button(action: sendFeedbackEmail) {
                         SettingsRow(
                             icon: "exclamationmark.bubble.fill",
@@ -77,18 +68,17 @@ struct SettingsView: View {
                             title: "Report an Issue"
                         )
                     }
-                    NavigationLink {
-                        MapGuideView()
+                    
+                    Button {
+                        showingVideo.toggle()
                     } label: {
                         SettingsRow(
                             icon: "map.fill",
                             iconColor: .fioletowy,
                             title: "Map Guide",
-                            showArrow: false
+                            textColor: .primary
                         )
                     }
-                    
-                    
                 }
 
                 
@@ -150,6 +140,9 @@ struct SettingsView: View {
             }
             .sheet(isPresented: $showingTerms) {
                 LegalDocumentView(title: "Terms of Service", content: termsOfService, headers: termsHeaders)
+            }
+            .sheet(isPresented: $showingVideo) {
+                MapGuideView()
             }
             .alert("Delete Account", isPresented: $showingDeleteConfirmation) {
                 Button("Cancel", role: .cancel) { }
@@ -217,24 +210,12 @@ struct SettingsRow: View {
     }
 }
 
-    
-    // MARK: - Notification Preferences
-    struct NotificationPreferencesView: View {
-        @State private var chatAlerts = true
-        
-        var body: some View {
-            Form {
-                Section(header: Text("Current chat notifications")) {
-                    Toggle("Notifications", isOn: $chatAlerts)
-                }
-            }
-            .navigationTitle("Notifications")
-        }
-    }
 
 
 // MARK: - Map guide
 struct MapGuideView: View {
+    @Environment(\.presentationMode) var presentationMode
+
     private var player: AVPlayer? = {
         if let url = Bundle.main.url(forResource: "mapGuideVid", withExtension: "mp4") {
             return AVPlayer(url: url)
@@ -243,37 +224,44 @@ struct MapGuideView: View {
     }()
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            
-            Text("Watch this video guide to learn how to effectively use the map features in our app.")
-                .foregroundColor(.secondary)
-                .padding(.horizontal)
-            
-            // Video player taking remaining space
-            GeometryReader { geometry in
-                if let player = player {
-                    VideoPlayer(player: player)
-                        .frame(width: geometry.size.width, height: geometry.size.height)
-                        .cornerRadius(12)
-                        .onAppear() {
-                            player.play()
-                        }
-                        .onDisappear() {
-                            player.pause()
-                            player.seek(to: .zero)
-                        }
-                } else {
-                    Text("Video not available")
-                        .frame(width: geometry.size.width, height: geometry.size.height)
-                        .background(Color.gray.opacity(0.2))
-                        .cornerRadius(12)
+        NavigationView {
+            VStack(alignment: .leading, spacing: 16) {
+                
+                Text("Watch this video guide to learn how to effectively use the map features in our app.")
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal)
+                
+                // Video player taking remaining space
+                GeometryReader { geometry in
+                    if let player = player {
+                        VideoPlayer(player: player)
+                            .frame(width: geometry.size.width, height: geometry.size.height)
+                            .cornerRadius(12)
+                            .onAppear() {
+                                player.play()
+                            }
+                            .onDisappear() {
+                                player.pause()
+                                player.seek(to: .zero)
+                            }
+                    } else {
+                        Text("Video not available")
+                            .frame(width: geometry.size.width, height: geometry.size.height)
+                            .background(Color.gray.opacity(0.2))
+                            .cornerRadius(12)
                         
-
+                        
+                    }
                 }
+                .padding(.horizontal)
             }
-            .padding(.horizontal)
+            .navigationTitle("Map guide")
+            .navigationBarItems(
+                trailing: Button("Done") {
+                    presentationMode.wrappedValue.dismiss()
+                }.foregroundColor(.czerwony)
+            )
         }
-        .navigationTitle("Map guide")
     }
 }
     

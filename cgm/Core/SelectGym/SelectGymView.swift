@@ -78,7 +78,7 @@ struct SelectGymView: View {
                     .listStyle(PlainListStyle())
                 }
             }
-            .padding(.top, 140)
+            .padding(.top, 100)
         }
         .frame(maxHeight: .infinity)
     }

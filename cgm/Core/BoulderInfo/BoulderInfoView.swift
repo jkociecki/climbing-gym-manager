@@ -882,7 +882,7 @@ struct ToppedByTable: View {
                     HStack {
                         Image(uiImage: viewModel.usersData[toppedBy.user_id]?.2
                                 .flatMap { UIImage(data: $0) }
-                                ?? UIImage(systemName: "person.crop.circle.fill")!)
+                                ?? UIImage(named: "default_avatar")!)
                             .resizable()
                             .frame(width: 30, height: 30)
                             .clipShape(Circle())

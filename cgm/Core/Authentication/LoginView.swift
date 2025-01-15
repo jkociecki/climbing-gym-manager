@@ -131,9 +131,9 @@ struct LoginView: View {
                 
             }
         }
-//        .onTapGesture {
-//            hideKeyboard()
-//        }
+        .onTapGesture {
+            hideKeyboard()
+        }
     }
 }
 

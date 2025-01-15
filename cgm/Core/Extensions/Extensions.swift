@@ -170,16 +170,15 @@ extension Color {
 
 extension Color {
     func toHex() -> String {
-        // Pobierz składniki koloru w przestrzeni RGB
         guard let components = UIColor(self).cgColor.components else {
-            return "000000" // Domyślny kolor w przypadku błędu
+            return "000000"
         }
         
         let r = Int((components[0] * 255).rounded())
         let g = Int((components[1] * 255).rounded())
         let b = Int((components[2] * 255).rounded())
         
-        return String(format: "02X%02X%02X", r, g, b)
+        return String(format: "%02X%02X%02X", r, g, b)
     }
 }
 

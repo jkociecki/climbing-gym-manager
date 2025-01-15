@@ -101,7 +101,7 @@ struct SetUpAccountView: View {
                                 Text("Personal information")
                                     .font(.headline)
                                     .padding(.horizontal)
-                                    .foregroundColor(.black)
+                                    .foregroundColor(.primary)
                                 
                                 
                                 InfoRow(icon: "person",
@@ -119,7 +119,7 @@ struct SetUpAccountView: View {
                                 Text("Account")
                                     .font(.headline)
                                     .padding(.horizontal)
-                                    .foregroundColor(.black)
+                                    .foregroundColor(.primary)
                                     .padding(.top, 20)
                                 InfoRow(icon: "envelope",
                                         title: "Email",

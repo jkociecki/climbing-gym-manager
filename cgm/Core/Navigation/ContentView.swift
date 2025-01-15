@@ -24,7 +24,9 @@ struct MainView: View {
                  ZStack {
                      TopBar(config: getTopBarConfig())
                          .zIndex(1)
-                         .offset(x: showSideMenu ? UIScreen.main.bounds.width * 0.8 : 0)
+                         .offset(x: showSideMenu ? UIScreen.main.bounds.width * 0.8 :
+                                    showFilterPanel ? UIScreen.main.bounds.width * -0.8 :
+                                    showAddNewPost ? UIScreen.main.bounds.width * -0.8 : 0)
                          .ignoresSafeArea()
                          .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                          .padding(.top, -5)
@@ -44,7 +46,9 @@ struct MainView: View {
                          selectedTab = tab
                          selectedView = getDefaultViewForTab(tab)
                      })
-                     .offset(x: showSideMenu ? UIScreen.main.bounds.width * 0.8 : 0)
+                     .offset(x: showSideMenu ? UIScreen.main.bounds.width * 0.8 :
+                                showFilterPanel ? UIScreen.main.bounds.width * -0.8 :
+                                showAddNewPost ? UIScreen.main.bounds.width * -0.8 : 0)
                      .background(Color.black.opacity(0.8))
                      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                      .padding(.bottom, -40)
@@ -63,13 +67,18 @@ struct MainView: View {
                      SideMenuView(showSideMenu: $showSideMenu,
                                  selectedView: $selectedView)
                          .zIndex(1)
+
+                     
                      
                      SlidingFilterPanel(isShowing: $showFilterPanel,
                                       mapViewModel: mapViewModel)
-                         .zIndex(2)
+                         .zIndex(1)
+
                      
                      SlidinNewPostView(isShowing: $showAddNewPost)
-                         .zIndex(2)
+                         .zIndex(1)
+
+                     
                  }
                  .ignoresSafeArea(.keyboard, edges: .bottom)
                  .animation(.easeInOut(duration: 0.3), value: showSideMenu)
@@ -81,11 +90,15 @@ struct MainView: View {
          .task {
              isAuthenhicating = true
              await authManager.checkAuth()
+             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
              isAuthenhicating = false
          }
-//         .onTapGesture {
-//             hideKeyboard()
-//         }
+         .animation(.easeInOut(duration: 0.3), value: showSideMenu || showFilterPanel || showAddNewPost)
+         .onAppear {
+             DispatchQueue.main.async {
+                 UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+             }
+         }
      }
     
     private func getTopBarConfig() -> TopBarConfig {

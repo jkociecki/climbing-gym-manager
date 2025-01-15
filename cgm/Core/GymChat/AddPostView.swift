@@ -29,9 +29,9 @@ struct SlidinNewPostView: View {
                 HStack(spacing: 0) {
                     NewPostView(isShowing: $isShowing, viewModel: postViewModel)
                 }
-                .frame(width: geometry.size.width * 1)
+                .frame(width: geometry.size.width)
                 .background(.white)
-                .offset(x: isShowing ? 0 : geometry.size.width)
+                .offset(x: isShowing ? 0 : geometry.size.width + 100)
                 .animation(.easeInOut(duration: 0.3), value: isShowing)
             }
             .onChange(of: isShowing) { newValue in
@@ -143,6 +143,7 @@ struct NewPostView: View {
                     Button(action: {
                         Task{
                             try await publishPost()
+                            isShowing = false
                         }
                     })
                         {
@@ -209,10 +210,10 @@ struct NewPostView: View {
                 
             }
             .onAppear {
-                isTextFieldFocused = true
+                isTextFieldFocused = false
             }
         }.onAppear {
-            isTextFieldFocused = true
+            isTextFieldFocused = false
             Task {
                 await viewModel.loadUserData()
             }

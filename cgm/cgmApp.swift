@@ -18,6 +18,10 @@ struct cgmApp: App {
             ZStack {
                 if isLoading {
                     AnimatedLoader(size: 60)
+                        .onDisappear{
+                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+
+                        }
                         
                 } else {
                     Group {
@@ -29,6 +33,7 @@ struct cgmApp: App {
                     }
                 }
             }
+            
             .onAppear {
                 Task {
                     async let authCheck = authManager.checkAuth()

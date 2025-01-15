@@ -95,7 +95,8 @@ class MapViewModel: ObservableObject{
     func applyFilters(difficulties: ClosedRange<Int>, colors: Set<String>, sectors: Set<String>) {
         boulders = originalBoulders.filter { boulder in
             let mappedDifficulty = mapDifficultyToNumber(diff: boulder.difficulty)
-
+            print(colors)
+            print(boulder.color.toHex())
             let difficultyMatch: Bool = difficulties.contains(mappedDifficulty)
             let colorMatch: Bool = colors.isEmpty ? true : colors.contains(boulder.color.toHex())
             let sectorMatch: Bool = sectors.isEmpty ? true : sectors.contains(boulder.sector)

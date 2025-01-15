@@ -51,7 +51,10 @@ class DatabaseManager {
     
     func getCurrentGymBoulders() async throws -> [BoulderD] {
         let currentGymId = UserDefaults.standard.string(forKey: "selectedGym")
-        let gymsSectors: [BoulderD] = try await client.from("Boulders").select("*").eq("gym_id", value: currentGymId).execute().value
+        let gymsSectors: [BoulderD] = try await client.from("Boulders").select("*")
+            .eq("gym_id", value: currentGymId)
+            .eq("is_active", value: true)
+            .execute().value
         return gymsSectors
     }
     
@@ -258,7 +261,7 @@ class DatabaseManager {
     
     func deletePost(postId: Int) async throws {
         let response = try await client
-            .from("Posts") // Zakładam, że masz tabelę "Posts"
+            .from("Posts")
             .delete()
             .eq("post_id", value: postId)
             .execute()
@@ -268,7 +271,7 @@ class DatabaseManager {
     
     func deleteComment(commentId: Int) async throws {
         let response = try await client
-            .from("Comments") // Zakładam, że masz tabelę "Posts"
+            .from("Comments")
             .delete()
             .eq("comment_id", value: commentId)
             .execute()
