@@ -3,7 +3,7 @@ import Supabase
 import Storage
 
 class StorageManager {
-    static let shared = StorageManager()
+    static var shared = StorageManager()
     
     private let api_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhhd2ZzbGNueGplcmZsbHBicmlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQyMTAzNjcsImV4cCI6MjA0OTc4NjM2N30.hAAMQQ9YeNCwopa3UzUCaJ8NlHrxNfS2zJTnrljIp3k"
     
@@ -20,7 +20,7 @@ class StorageManager {
         return SupabaseStorageClient(configuration: configuration)
     }()
     
-    private init() {}
+    init() {}
     
     func uploadFileForCurrentUser(photoData: Data) async throws {
         let fileName = "profile_photo.jpg"

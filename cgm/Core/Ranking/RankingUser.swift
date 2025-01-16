@@ -24,7 +24,11 @@ struct GymUserData: Decodable {
 }
 
 class RankingManager {
-    let db = DatabaseManager.shared
+    let db: DatabaseManager
+    
+    init(databaseManager: DatabaseManager = DatabaseManager.shared) {
+        self.db = databaseManager
+    }
     
     func generateRanking() async throws -> [RankingUser] {
         guard let idString = UserDefaults.standard.string(forKey: "selectedGym"),
@@ -32,7 +36,7 @@ class RankingManager {
             throw NSError(domain: "InvalidGymID", code: 0, userInfo: [NSLocalizedDescriptionKey: "Gym ID is not set or invalid."])
         }
         
-        let gymData = try await db.client.rpc("get_gym_users_data", params: ["gym_id_param": gymID]).execute().value as [GymUserData]
+        let gymData = try await db.fetchGymData(gymID: gymID)
         
         let userGroupedData = Dictionary(grouping: gymData) { $0.user_uid }
         

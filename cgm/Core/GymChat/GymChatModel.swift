@@ -46,19 +46,23 @@ class GymChatModel: ObservableObject {
         return formatter
     }()
 
+    
+    var isTesting = false
+
     @MainActor
     private func setLoading(_ loading: Bool) async {
+        if isTesting { return }
+        
         if loading {
             isLoading = true
-            if !wasLoaded && posts.isEmpty {  // dodatkowe sprawdzenie posts.isEmpty
-                try? await Task.sleep(nanoseconds: 1000_000_000)
+            if !wasLoaded && posts.isEmpty {
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
             }
         } else {
             isLoading = false
         }
         wasLoaded = true
     }
-    
     @MainActor
     func loadInitialPosts() async {
         currentPage = 1
@@ -75,11 +79,9 @@ class GymChatModel: ObservableObject {
     @MainActor
     func loadMorePosts() async {
         guard !isLoading && hasMorePosts else { return }
-        
         loadingTask?.cancel()
         loadingTask = Task {
             await setLoading(true)
-            
             do {
                 let newPosts = try await DatabaseManager.shared.getPaginatedPosts(page: currentPage)
                 

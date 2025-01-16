@@ -7,7 +7,11 @@ class DatabaseManager {
     
     let client = AuthManager.shared.client
     
-    static let shared = DatabaseManager()
+    static var shared = DatabaseManager()
+    
+    static func setSharedInstance(_ instance: DatabaseManager) {
+        shared = instance
+    }
     
     func getCurrentUserDataBaseID() async throws -> Int {
         let user_uuid = try await client.auth.session.user.id
@@ -102,6 +106,12 @@ class DatabaseManager {
         return vote.first
     }
     
+    func fetchGymData(gymID: Int) async throws -> [GymUserData] {
+        let gymData: [GymUserData] = try await client.rpc("get_gym_users_data", params: ["gym_id_param": gymID])
+            .execute()
+            .value
+        return gymData
+    }
     
     func getPostComments(post_id: Int) async throws -> [CommentsD] {
         let comments: [CommentsD] = try await client
@@ -649,7 +659,7 @@ struct PostsD: Encodable, Decodable {
     var post_id:   Int
     var created_at: Date
     var text:      String
-    var user_id:       Int
+    var user_id:    Int
     var gym_id:     Int
 }
 
