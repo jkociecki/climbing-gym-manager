@@ -120,7 +120,6 @@ class ChartsViewModelTests: XCTestCase {
         
         await Task.sleep(500_000_000)
         
-        // Then
         XCTAssertEqual(viewModel.lineChartData.count, 5, "Should have data for 5 months")
         XCTAssertFalse(viewModel.barChartData.isEmpty, "Bar chart should have data")
         

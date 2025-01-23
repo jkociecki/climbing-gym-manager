@@ -38,7 +38,7 @@ struct AnimatedLetter: View {
 }
 
 struct AnimatedLoader: View {
-    let size: CGFloat // Bazowy rozmiar komponentu (np. 60 to domyślny rozmiar z poprzedniej wersji)
+    let size: CGFloat
     
     @State private var animateText = false
     @State private var showGrid = false
@@ -52,7 +52,6 @@ struct AnimatedLoader: View {
     let wallColor = Color(red: 239/255, green: 83/255, blue: 80/255)
     let upColor = Color(red: 103/255, green: 58/255, blue: 183/255)
     
-    // Obliczamy proporcjonalne wymiary na podstawie size
     private var gridSquareSize: CGFloat { size * 0.25 }
     private var gridSpacing: CGFloat { size * 0.033 }
     private var letterSpacing: CGFloat { size * 0.033 }
@@ -63,7 +62,6 @@ struct AnimatedLoader: View {
     
     var body: some View {
         HStack(spacing: letterSpacing) {
-            // WALL text with per-letter animation
             HStack(spacing: letterSpacing) {
                 ForEach(Array(wallLetters.enumerated()), id: \.offset) { index, letter in
                     AnimatedLetter(
@@ -76,7 +74,6 @@ struct AnimatedLoader: View {
                 }
             }
             
-            // Animated Grid
             VStack(spacing: gridSpacing) {
                 ForEach(0..<gridRows, id: \.self) { row in
                     HStack(spacing: gridSpacing) {
@@ -99,7 +96,6 @@ struct AnimatedLoader: View {
             }
             .padding(.horizontal, gridSpacing)
             
-            // UP text with per-letter animation
             HStack(spacing: letterSpacing) {
                 ForEach(Array(upLetters.enumerated()), id: \.offset) { index, letter in
                     AnimatedLetter(

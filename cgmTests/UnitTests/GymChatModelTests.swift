@@ -37,7 +37,6 @@ class GymChatModelTests: XCTestCase {
 
     
     func testLoadInitialPosts() async throws {
-        // Przygotowanie danych testowych
         let mockPosts = [
             PostsD(post_id: 1, created_at: Date(), text: "Post 1", user_id: 1, gym_id: 1),
             PostsD(post_id: 2, created_at: Date(), text: "Post 2", user_id: 2, gym_id: 1)
@@ -166,4 +165,6 @@ class GymChatModelTests: XCTestCase {
         XCTAssertNotNil(resultData, "Should return profile picture data")
         XCTAssertEqual(resultData, mockImageData, "Should return correct image data")
     }
+    
+    
 }

@@ -45,6 +45,40 @@ class MockDatabaseManager: DatabaseManager {
     
     override func deletePost(postId: Int) async throws {
     }
+    
+    var mockBoulder: BoulderD!
+    var mockSector: SectorD!
+    var mockToppedByData: [ToppedBy]!
+    var mockVotesData: [DatabaseManager.AllGradeGroupedVotes]!
+    var mockRatingsData: [StarVote]!
+    
+    override func getBoulderByID(boulderID: Int) async throws -> BoulderD? {
+        return mockBoulder
+    }
+    
+    override func getSectorByID(sectorID: Int) async throws -> SectorD? {
+        return mockSector
+    }
+    
+    override func getToppedBy(boulderID: Int, userID: String) async throws -> ToppedBy? {
+        guard let toppedBy = mockToppedByData.first(where: { $0.user_id == userID && $0.boulder_id == boulderID }) else {
+            print("No toppedBy data found for boulderID: \(boulderID) and userID: \(userID)")
+            return nil
+        }
+        return toppedBy
+    }
+
+
+
+
+    
+    override func fetchGroupedGradeVotes(boulderID: Int, boulderDifficulty: String) async throws -> [DatabaseManager.AllGradeGroupedVotes] {
+        return mockVotesData
+    }
+    
+    override func getBoulderStarVotes(boulderID: Int) async throws -> [StarVote] {
+        return mockRatingsData
+    }
 }
 
 

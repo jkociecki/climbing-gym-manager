@@ -9,7 +9,6 @@ import Foundation
 import SwiftUI
 
 
-@MainActor
 class BoulderInfoModel: ObservableObject {
     @Published var difficulty: String = "Loading..."
     @Published var sector: String = "Loading..."
@@ -31,12 +30,21 @@ class BoulderInfoModel: ObservableObject {
     init(boulderID: Int, userID: String = "08BBCE85-0A59-4500-821D-0A235C7C5AEA") {
         self.boulderID = boulderID
         self.userID = userID
-        Task {
-            await loadBoulderData()
-            await loadInitialState()
-            await loadVotes()
-            await loadRatings()
+        
+        #if DEBUG
+        if !isRunningTests() {
+            Task {
+                await loadBoulderData()
+                await loadInitialState()
+                await loadVotes()
+                await loadRatings()
+            }
         }
+        #endif
+    }
+
+    private func isRunningTests() -> Bool {
+        return ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
     }
 
     func loadBoulderData() async {
@@ -157,7 +165,7 @@ class BoulderInfoModel: ObservableObject {
         routesetter = "Unknown"
     }
 
-    private func setErrorState() {
+    func setErrorState() {
         difficulty = "Error"
         sector = "Error"
         routesetter = "Error"
