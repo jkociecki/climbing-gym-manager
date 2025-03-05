@@ -15,61 +15,107 @@ WALL UP is an application designed for climbing gym owners and bouldering enthus
 
 ---
 
-
-
 ## Features
 
 ### User Management
-<img width="83" alt="image" src="https://github.com/user-attachments/assets/77090057-9fa0-4a5d-890c-3c5b6b2346bf" />
-- Login/registration with email and password.
-- Profile customization (name, gender, profile picture, gym preference).
+<div style="display: flex; align-items: center;">
+  <img width="83" alt="User Management" src="https://github.com/user-attachments/assets/77090057-9fa0-4a5d-890c-3c5b6b2346bf" style="margin-right: 20px;"/>
+  <div>
+    <ul>
+      <li>Login/registration with email and password.</li>
+      <li>Profile customization (name, gender, profile picture, gym preference).</li>
+    </ul>
+  </div>
+</div>
 
 ### Interactive Climbing Map
-<img width="85" alt="image" src="https://github.com/user-attachments/assets/3187b76f-f542-49ea-a9dd-02ce3ed02c38" />
-- SVG-based dynamic map.
-- Zoom in/out functionality.
-- Clickable sectors revealing boulders.
-- Filtering by difficulty level, color, and sector.
+<div style="display: flex; align-items: center;">
+  <img width="85" alt="Climbing Map" src="https://github.com/user-attachments/assets/3187b76f-f542-49ea-a9dd-02ce3ed02c38" style="margin-right: 20px;"/>
+  <div>
+    <ul>
+      <li>SVG-based dynamic map.</li>
+      <li>Zoom in/out functionality.</li>
+      <li>Clickable sectors revealing boulders.</li>
+      <li>Filtering by difficulty level, color, and sector.</li>
+    </ul>
+  </div>
+</div>
 
 ### Boulder Info & Tracking
-<img width="85" alt="image" src="https://github.com/user-attachments/assets/a0787f74-6741-41cb-a24d-59ae2b786f96" />
-- Users can mark boulders as "flashed" or "completed."
-- Flash actions include animations and sound effects.
-- Rate boulder difficulty and view rating charts.
-- "Topped By" section displaying climbers who completed the route.
+<div style="display: flex; align-items: center;">
+  <img width="85" alt="Boulder Info" src="https://github.com/user-attachments/assets/a0787f74-6741-41cb-a24d-59ae2b786f96" style="margin-right: 20px;"/>
+  <div>
+    <ul>
+      <li>Users can mark boulders as "flashed" or "completed."</li>
+      <li>Flash actions include animations and sound effects.</li>
+      <li>Rate boulder difficulty and view rating charts.</li>
+      <li>"Topped By" section displaying climbers who completed the route.</li>
+    </ul>
+  </div>
+</div>
 
 ### Ranking System
-<img width="86" alt="image" src="https://github.com/user-attachments/assets/5a5e5ec4-99c1-4749-af2f-1c805113114e" />
-- Leaderboard for top climbers in the past two months.
-- Skill level tracking based on completed boulders.
-- Progress tracking toward the next skill level.
+<div style="display: flex; align-items: center;">
+  <img width="86" alt="Ranking System" src="https://github.com/user-attachments/assets/5a5e5ec4-99c1-4749-af2f-1c805113114e" style="margin-right: 20px;"/>
+  <div>
+    <ul>
+      <li>Leaderboard for top climbers in the past two months.</li>
+      <li>Skill level tracking based on completed boulders.</li>
+      <li>Progress tracking toward the next skill level.</li>
+    </ul>
+  </div>
+</div>
 
 ### Chat System
-<img width="86" alt="image" src="https://github.com/user-attachments/assets/62a4b2e6-4d83-4ac7-b0c6-eff2290af14a" />
-- Post, comment, and engage with other climbers.
-- "Your Posts" section to view personal activity.
-- Supports real-time interaction.
+<div style="display: flex; align-items: center;">
+  <img width="86" alt="Chat System" src="https://github.com/user-attachments/assets/62a4b2e6-4d83-4ac7-b0c6-eff2290af14a" style="margin-right: 20px;"/>
+  <div>
+    <ul>
+      <li>Post, comment, and engage with other climbers.</li>
+      <li>"Your Posts" section to view personal activity.</li>
+      <li>Supports real-time interaction.</li>
+    </ul>
+  </div>
+</div>
 
 ### Personal Statistics
-<img width="86" alt="image" src="https://github.com/user-attachments/assets/61c9e07c-ab9f-45f5-af9b-9447a7fcb4c0" />
-- Displays tops, flashes, and visits.
-- Charts for monthly points and boulder difficulty distribution.
-- Highlights top 10 boulders completed in the past two months.
+<div style="display: flex; align-items: center;">
+  <img width="86" alt="Personal Statistics" src="https://github.com/user-attachments/assets/61c9e07c-ab9f-45f5-af9b-9447a7fcb4c0" style="margin-right: 20px;"/>
+  <div>
+    <ul>
+      <li>Displays tops, flashes, and visits.</li>
+      <li>Charts for monthly points and boulder difficulty distribution.</li>
+      <li>Highlights top 10 boulders completed in the past two months.</li>
+    </ul>
+  </div>
+</div>
 
 ### Gym Profiles
-<img width="86" alt="image" src="https://github.com/user-attachments/assets/bf1730d2-22cb-4736-81a7-6e29b5b97632" />
-- Gym logo, photos, and rating.
-- Opening hours and real-time status.
-- Route distribution by difficulty.
-- Interactive address and navigation support.
+<div style="display: flex; align-items: center;">
+  <img width="86" alt="Gym Profiles" src="https://github.com/user-attachments/assets/bf1730d2-22cb-4736-81a7-6e29b5b97632" style="margin-right: 20px;"/>
+  <div>
+    <ul>
+      <li>Gym logo, photos, and rating.</li>
+      <li>Opening hours and real-time status.</li>
+      <li>Route distribution by difficulty.</li>
+      <li>Interactive address and navigation support.</li>
+    </ul>
+  </div>
+</div>
 
 ### Settings & Accessibility
-<img width="86" alt="image" src="https://github.com/user-attachments/assets/a13149b9-25e1-4b37-8f8c-958a2ae5b31d" />
-- Dark Mode toggle.
-- "Report Issue" functionality.
-- Video guide for map usage.
-- Privacy Policy & Terms of Service.
-- Account deletion option.
+<div style="display: flex; align-items: center;">
+  <img width="86" alt="Settings & Accessibility" src="https://github.com/user-attachments/assets/a13149b9-25e1-4b37-8f8c-958a2ae5b31d" style="margin-right: 20px;"/>
+  <div>
+    <ul>
+      <li>Dark Mode toggle.</li>
+      <li>"Report Issue" functionality.</li>
+      <li>Video guide for map usage.</li>
+      <li>Privacy Policy & Terms of Service.</li>
+      <li>Account deletion option.</li>
+    </ul>
+  </div>
+</div>
 
 ---
 
@@ -78,5 +124,4 @@ WALL UP is an application designed for climbing gym owners and bouldering enthus
 - Points are awarded based on difficulty and flash bonus:
   - Example: Completing a 6A boulder earns 80 points.
   - Flash Bonus: Extra 20% points if flashed.
-
 
